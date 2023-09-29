@@ -41,7 +41,7 @@ func InitAttestation() {
 		},
 	}
 
-	server := http.Server{Addr: "0.0.0.0:8080", TLSConfig: &tlsCfg}
+	server := http.Server{Addr: "0.0.0.0:8083", TLSConfig: &tlsCfg}
 
 	fmt.Println("listening ...")
 	err = server.ListenAndServeTLS("", "")

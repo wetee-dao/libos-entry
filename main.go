@@ -29,7 +29,7 @@ func main() {
 	var service string
 
 	switch libOS {
-	case "gramine":
+	case "Gramine":
 		log.Println("Geted libOS: Gramine")
 
 		service, err = libos.InitGramineEntry(hostfs)
@@ -37,12 +37,12 @@ func main() {
 			utils.ExitWithMsg("activating Gramine entry failed: %s", err)
 		}
 
-		// case occlum:
+		// case "Occlum":
 		// 	log.Println("Geted libOS: Occlum")
 
 		// 	service, err =  initOcclumEntry(hostfs)
 		// 	if err != nil {
-		// 		exit("activating Occlum enty failed: %s", err)
+		// 		exit("activating Occlum entry failed: %s", err)
 		// 	}
 	}
 
