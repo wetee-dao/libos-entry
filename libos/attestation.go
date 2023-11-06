@@ -33,12 +33,10 @@ func InitAttestation() {
 	})
 
 	tlsCfg := tls.Config{
-		Certificates: []tls.Certificate{
-			{
-				Certificate: [][]byte{cert},
-				PrivateKey:  priv,
-			},
-		},
+		Certificates: []tls.Certificate{{
+			Certificate: [][]byte{cert},
+			PrivateKey:  priv,
+		}},
 	}
 
 	server := http.Server{Addr: "0.0.0.0:8083", TLSConfig: &tlsCfg}
