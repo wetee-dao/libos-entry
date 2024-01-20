@@ -1,59 +1,78 @@
 package libos
 
 import (
-	"crypto"
-	"crypto/rand"
-	"crypto/rsa"
+	"bytes"
 	"crypto/sha256"
 	"crypto/tls"
-	"crypto/x509"
-	"crypto/x509/pkix"
+	"encoding/binary"
+	"errors"
 	"fmt"
-	"math/big"
+	"io"
 	"net/http"
-	"time"
+	"strings"
 
-	"github.com/edgelesssys/ego/enclave"
+	"github.com/edgelesssys/ego/attestation"
+	"github.com/edgelesssys/ego/attestation/tcbstatus"
+	"github.com/edgelesssys/ego/eclient"
 )
 
-func InitAttestation() {
-	// Create certificate and a report that includes the certificate's hash.
-	cert, priv := createCertificate()
-	hash := sha256.Sum256(cert)
-	report, err := enclave.GetRemoteReport(hash[:])
-	if err != nil {
-		fmt.Println(err)
+func verifyReport(reportBytes, certBytes, signer []byte) error {
+	report, err := eclient.VerifyRemoteReport(reportBytes)
+	if err == attestation.ErrTCBLevelInvalid {
+		fmt.Printf("Warning: TCB level is invalid: %v\n%v\n", report.TCBStatus, tcbstatus.Explain(report.TCBStatus))
+		fmt.Println("We'll ignore this issue in this sample. For an app that should run in production, you must decide which of the different TCBStatus values are acceptable for you to continue.")
+	} else if err != nil {
+		return err
 	}
 
-	// Create HTTPS server.
-	http.HandleFunc("/cert", func(w http.ResponseWriter, r *http.Request) { w.Write(cert) })
-	http.HandleFunc("/report", func(w http.ResponseWriter, r *http.Request) { w.Write(report) })
-	http.HandleFunc("/secret", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Printf("%v sent secret %v\n", r.RemoteAddr, r.URL.Query()["s"])
-	})
-
-	tlsCfg := tls.Config{
-		Certificates: []tls.Certificate{{
-			Certificate: [][]byte{cert},
-			PrivateKey:  priv,
-		}},
+	hash := sha256.Sum256(certBytes)
+	if !bytes.Equal(report.Data[:len(hash)], hash[:]) {
+		return errors.New("report data does not match the certificate's hash")
 	}
 
-	server := http.Server{Addr: "0.0.0.0:8083", TLSConfig: &tlsCfg}
+	// You can either verify the UniqueID or the tuple (SignerID, ProductID, SecurityVersion, Debug).
 
-	fmt.Println("listening ...")
-	err = server.ListenAndServeTLS("", "")
-	fmt.Println(err)
+	if report.SecurityVersion < 2 {
+		return errors.New("invalid security version")
+	}
+	if binary.LittleEndian.Uint16(report.ProductID) != 1234 {
+		return errors.New("invalid product")
+	}
+	if !bytes.Equal(report.SignerID, signer) {
+		return errors.New("invalid signer")
+	}
+
+	// For production, you must also verify that report.Debug == false
+
+	return nil
 }
 
-func createCertificate() ([]byte, crypto.PrivateKey) {
-	template := &x509.Certificate{
-		SerialNumber: &big.Int{},
-		Subject:      pkix.Name{CommonName: "localhost"},
-		NotAfter:     time.Now().Add(time.Hour),
-		DNSNames:     []string{"localhost"},
+func workerGet(tlsConfig *tls.Config, url string) []byte {
+	client := http.Client{Transport: &http.Transport{TLSClientConfig: tlsConfig}}
+	resp, err := client.Get(url)
+	if err != nil {
+		panic(err)
 	}
-	priv, _ := rsa.GenerateKey(rand.Reader, 2048)
-	cert, _ := x509.CreateCertificate(rand.Reader, template, template, &priv.PublicKey, priv)
-	return cert, priv
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		panic(resp.Status)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+	return body
+}
+
+func workerPost(tlsConfig *tls.Config, url string, json string) ([]byte, error) {
+	client := http.Client{Transport: &http.Transport{TLSClientConfig: tlsConfig}}
+	payload := strings.NewReader(json)
+	req, _ := http.NewRequest("POST", url, payload)
+	req.Header.Add("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return io.ReadAll(resp.Body)
 }

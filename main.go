@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/afero"
 	"golang.org/x/sys/unix"
-	"wetee.app/libos-entrypoint/libos"
-	"wetee.app/libos-entrypoint/utils"
+	"wetee.app/libos-entry/libos"
+	"wetee.app/libos-entry/utils"
 )
 
 func main() {
@@ -32,7 +32,7 @@ func main() {
 	case "Gramine":
 		log.Println("Geted libOS: Gramine")
 
-		service, err = libos.InitGramineEntry(hostfs)
+		service, err = libos.InitGramineEntry(hostfs, "")
 		if err != nil {
 			utils.ExitWithMsg("activating Gramine entry failed: %s", err)
 		}

@@ -1,4 +1,4 @@
-module wetee.app/libos-entrypoint
+module wetee.app/libos-entry
 
 go 1.21.0
 
