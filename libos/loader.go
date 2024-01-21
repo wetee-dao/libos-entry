@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/spf13/afero"
 	"wetee.app/libos-entry/utils"
 )
@@ -42,7 +41,7 @@ func PreLoad(chainAddr string, fs afero.Fs) error {
 	// 构建签名证明自己在集群中的身份
 	// Build the signature to prove your identity in the cluster
 	param := &LoadParam{
-		Address:   sigKey.Address,
+		Address:   sigKey.SS58Address(42),
 		Time:      fmt.Sprint(time.Now().Unix()),
 		Signature: "NONE",
 	}
@@ -50,7 +49,7 @@ func PreLoad(chainAddr string, fs afero.Fs) error {
 
 	// 签名
 	// Sign
-	sig, err := signature.Sign([]byte(param.Time), sigKey.URI)
+	sig, err := sigKey.Sign([]byte(param.Time))
 	if err != nil {
 		return err
 	}
