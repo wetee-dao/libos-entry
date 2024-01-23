@@ -55,8 +55,8 @@ func main() {
 
 	// Start service
 	// 开启服务
-	util.LogWithRed("Starting service ", service+" "+strings.Join(os.Args[1:], " "))
-	if err := unix.Exec(service, os.Args[1:], os.Environ()); err != nil {
+	util.LogWithRed("Starting service ", service+" "+strings.Join(os.Args, " "))
+	if err := unix.Exec(service, os.Args, os.Environ()); err != nil {
 		util.ExitWithMsg("Starting service error", err.Error())
 	}
 }
