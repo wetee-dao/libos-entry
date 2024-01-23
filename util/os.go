@@ -4,9 +4,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package utils
+package util
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -40,8 +41,7 @@ func GetLibOS() (string, error) {
 		return "Gramine", nil
 	}
 
-	return "Gramine", nil
-	// return "NotTEE", errors.New("cannot get libOS")
+	return "NotTEE", errors.New("cannot get libOS")
 }
 
 func ExitWithMsg(format string, args ...interface{}) {

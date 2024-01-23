@@ -1,4 +1,4 @@
-package utils
+package util
 
 import "os"
 
@@ -11,5 +11,5 @@ func GetEnv(key string, defaultValue string) string {
 }
 
 func GetRootDir() string {
-	return "/opt/wetee"
+	return "/wetee"
 }

@@ -22,6 +22,8 @@ RUN apt-get update && \
 RUN mkdir -p /var/run/aesmd/
 
 COPY init_aesm.sh /init_aesm.sh
+COPY libos-entry /libos-entry
+RUN chmod +x /init_aesm.sh && chmod +x /libos-entry
 
 ENTRYPOINT ["/bin/sh", "-c"]
 CMD ["/init_aesm.sh ; exec /bin/bash"]

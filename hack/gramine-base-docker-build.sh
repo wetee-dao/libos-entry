@@ -6,9 +6,9 @@ while [ -h "$SOURCE"  ]; do
     [[ $SOURCE != /*  ]] && SOURCE="$DIR/$SOURCE"
 done
 DIR="$( cd -P "$( dirname "$SOURCE"  )" && pwd  )"
-cd $DIR/../
+cd $DIR/../base-docker/gramine
 
-rm -f  bin/libos-entry
-cd bin
+cp $DIR/../bin/libos-entry ./libos-entry
 
-go run
+docker build -f ./Dockerfile.gramine-ubuntu-20-04 -t wetee/gramine-ubuntu:20.04 .
+docker push wetee/ubuntu:20.04

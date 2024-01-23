@@ -1,4 +1,4 @@
-package utils
+package util
 
 import (
 	"fmt"
@@ -9,18 +9,35 @@ import (
 	"github.com/vedhavyas/go-subkey/v2/sr25519"
 )
 
-func SaveKey(appFs afero.Fs, appKey subkey.KeyPair, filename string) error {
-	if err := afero.WriteFile(appFs, filename, appKey.Seed(), 0o600); err != nil {
+func SaveKey(appFs afero.Fs, appKey subkey.KeyPair, filename string, sf SecretFunction) error {
+	// 加密数据
+	val, err := sf.Encrypt(appKey.Seed())
+	if err != nil {
+		return fmt.Errorf("failed to encrypt Key: %v", err)
+	}
+
+	if err := afero.WriteFile(appFs, filename, val, 0o600); err != nil {
 		return fmt.Errorf("failed to store Key to file: %v", err)
 	}
 	return nil
 }
 
-func LoadKey(appFs afero.Fs, filename string) (subkey.KeyPair, error) {
+func LoadKey(appFs afero.Fs, filename string, sf SecretFunction) (subkey.KeyPair, error) {
+	_, err := appFs.Stat(filename)
+	if err != nil {
+		appFs.Create(filename)
+	}
 	keyBytes, err := afero.ReadFile(appFs, filename)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Key from file: %v", err)
 	}
+
+	// 解密数据
+	keyBytes, err = sf.Decrypt(keyBytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt Key: %v", err)
+	}
+
 	appKey, err := sr25519.Scheme{}.FromSeed(keyBytes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal Key: %v", err)
@@ -29,9 +46,9 @@ func LoadKey(appFs afero.Fs, filename string) (subkey.KeyPair, error) {
 	return appKey, nil
 }
 
-func GetKey(appFs afero.Fs, KeyFile string) (subkey.KeyPair, error) {
+func GetKey(appFs afero.Fs, KeyFile string, sf SecretFunction) (subkey.KeyPair, error) {
 	log.Println("geting Key")
-	existingKey, err := LoadKey(appFs, KeyFile)
+	existingKey, err := LoadKey(appFs, KeyFile, sf)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +60,7 @@ func GetKey(appFs afero.Fs, KeyFile string) (subkey.KeyPair, error) {
 		if err != nil {
 			return nil, err
 		}
-		if err := SaveKey(appFs, newKey, KeyFile); err != nil {
+		if err := SaveKey(appFs, newKey, KeyFile, sf); err != nil {
 			return nil, err
 		}
 		return newKey, nil

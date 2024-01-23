@@ -11,15 +11,15 @@ import (
 	"time"
 
 	"github.com/spf13/afero"
-	"wetee.app/libos-entry/utils"
+	"github.com/wetee-dao/libos-entry/util"
 )
 
-func PreLoad(chainAddr string, fs afero.Fs) error {
+func PreLoad(chainAddr string, fs afero.Fs, sf util.SecretFunction) error {
 	// 读取配置文件
 	// Read config file
-	isTee := utils.GetEnv("IN_TEE", "0")
-	AppID := utils.GetEnv("APPID", "NONE")
-	keyFile := filepath.Join(utils.GetRootDir(), "sid")
+	isTee := util.GetEnv("IN_TEE", "0")
+	AppID := util.GetEnv("APPID", "NONE")
+	keyFile := filepath.Join(util.GetRootDir(), "sid")
 
 	// 读取配置id
 	// Read config id
@@ -29,7 +29,7 @@ func PreLoad(chainAddr string, fs afero.Fs) error {
 	}
 
 	// 读取签名key
-	sigKey, err := utils.GetKey(fs, keyFile)
+	sigKey, err := util.GetKey(fs, keyFile, sf)
 	if err != nil {
 		return err
 	}
@@ -40,7 +40,7 @@ func PreLoad(chainAddr string, fs afero.Fs) error {
 
 	// 构建签名证明自己在集群中的身份
 	// Build the signature to prove your identity in the cluster
-	param := &LoadParam{
+	param := &util.LoadParam{
 		Address:   sigKey.SS58Address(42),
 		Time:      fmt.Sprint(time.Now().Unix()),
 		Signature: "NONE",
@@ -64,7 +64,7 @@ func PreLoad(chainAddr string, fs afero.Fs) error {
 
 	// 解析机密
 	// Parse the secret
-	secret := &Secrets{}
+	secret := &util.Secrets{}
 	err = json.Unmarshal(bt, secret)
 	if err != nil {
 		return err
@@ -80,7 +80,7 @@ func PreLoad(chainAddr string, fs afero.Fs) error {
 	return nil
 }
 
-func applySecrets(s *Secrets, fs afero.Fs) error {
+func applySecrets(s *util.Secrets, fs afero.Fs) error {
 	// 写入配置文件
 	// Write config file
 	for path, data := range s.Files {
