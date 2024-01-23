@@ -8,13 +8,12 @@ import (
 
 	"github.com/edgelesssys/ego/ecrypto"
 	"github.com/edgelesssys/ego/enclave"
-	"github.com/spf13/afero"
-	"github.com/wetee-dao/libos-entry/libos"
 )
 
 func InitEgo(chainAddr string) error {
-	hostfs := afero.NewOsFs()
-	return libos.PreLoad(chainAddr, hostfs, &EgoSf{})
+	// hostfs := afero.NewOsFs()
+	// return libos.PreLoad(chainAddr, hostfs, &EgoSf{})
+	return nil
 }
 
 type EgoSf struct {
