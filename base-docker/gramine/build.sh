@@ -10,5 +10,5 @@ cd $DIR
 
 CGO_CFLAGS=-I/opt/ego/include CGO_LDFLAGS=-L/opt/ego/lib ertgo build -o libos-entry -buildmode=pie -buildvcs=false ../../lib/entry/main.go
 
-docker build -f ./Dockerfile.gramine-ubuntu-20-04 -t wetee/ubuntu:20.04 .
-docker push wetee/ubuntu:20.04
+docker build -f ./Dockerfile.gramine-ubuntu-20-04 -t wetee/gramine-ubuntu:20.04 .
+docker push wetee/gramine-ubuntu:20.04
