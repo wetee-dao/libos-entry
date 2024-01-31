@@ -10,6 +10,13 @@ import (
 )
 
 func SaveKey(appFs afero.Fs, appKey subkey.KeyPair, filename string, sf SecretFunction) error {
+	_, err := appFs.Stat(filename)
+	if err != nil {
+		_, err = appFs.Create(filename)
+		if err != nil {
+			return fmt.Errorf("failed to create Key file: %v", err)
+		}
+	}
 	// 加密数据
 	val, err := sf.Encrypt(appKey.Seed())
 	if err != nil {
@@ -23,19 +30,20 @@ func SaveKey(appFs afero.Fs, appKey subkey.KeyPair, filename string, sf SecretFu
 }
 
 func LoadKey(appFs afero.Fs, filename string, sf SecretFunction) (subkey.KeyPair, error) {
-	_, err := appFs.Stat(filename)
-	if err != nil {
-		appFs.Create(filename)
-	}
 	keyBytes, err := afero.ReadFile(appFs, filename)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read Key from file: %v", err)
+		return nil, nil
+	}
+
+	// 没有key文件，返回nil
+	if keyBytes == nil && len(keyBytes) == 0 {
+		return nil, nil
 	}
 
 	// 解密数据
 	keyBytes, err = sf.Decrypt(keyBytes)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decrypt Key: %v", err)
+		return nil, nil
 	}
 
 	appKey, err := sr25519.Scheme{}.FromSeed(keyBytes)
