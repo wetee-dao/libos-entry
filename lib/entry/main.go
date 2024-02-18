@@ -30,7 +30,7 @@ func main() {
 
 	// Use filesystem from libOS
 	// 获取libOS的文件系统
-	hostfs := afero.NewOsFs()
+	hostfs := &LibosSf{}
 	util.LogWithRed("OS hostfs: ", hostfs)
 
 	var service string
@@ -39,7 +39,6 @@ func main() {
 	case "Gramine":
 		log.Println("Geted libOS: Gramine")
 
-		hostfs := &LibosSf{}
 		service, err = libos.InitGramineEntry("", hostfs)
 		if err != nil {
 			util.ExitWithMsg("activating Gramine entry failed: %s", err)
@@ -47,8 +46,7 @@ func main() {
 
 		// case "Occlum":
 		// 	log.Println("Geted libOS: Occlum")
-
-		// 	service, err =  initOcclumEntry(hostfs)
+		// 	service, err =  libos.InitOcclumEntry(hostfs)
 		// 	if err != nil {
 		// 		exit("activating Occlum entry failed: %s", err)
 		// 	}
@@ -68,12 +66,7 @@ type LibosSf struct {
 
 // Read implements util.Fs.
 func (e *LibosSf) ReadFile(filename string) ([]byte, error) {
-	bt, err := afero.ReadFile(e, filename)
-	if err != nil {
-		return nil, err
-	}
-
-	return bt, nil
+	return afero.ReadFile(e, filename)
 }
 
 // Write implements util.Fs.
