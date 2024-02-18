@@ -21,6 +21,7 @@ func InitEgo(chainAddr string) error {
 
 type EgoSf struct {
 	afero.OsFs
+	password string
 }
 
 // Read implements util.Fs.
@@ -52,16 +53,24 @@ func (e *EgoSf) WriteFile(filename string, data []byte, perm os.FileMode) error 
 }
 
 // Decrypt implements libos.SecretFunction.
-func (l *EgoSf) Decrypt(val []byte) ([]byte, error) {
-	return ecrypto.Unseal(val, nil)
+func (e *EgoSf) Decrypt(val []byte) ([]byte, error) {
+	var additionalData []byte = nil
+	if len(e.password) != 0 {
+		additionalData = []byte(e.password)
+	}
+	return ecrypto.Unseal(val, additionalData)
 }
 
 // Encrypt implements libos.SecretFunction.
-func (l *EgoSf) Encrypt(val []byte) ([]byte, error) {
-	return ecrypto.SealWithProductKey(val, nil)
+func (e *EgoSf) Encrypt(val []byte) ([]byte, error) {
+	var additionalData []byte = nil
+	if len(e.password) != 0 {
+		additionalData = []byte(e.password)
+	}
+	return ecrypto.SealWithProductKey(val, additionalData)
 }
 
-func (l *EgoSf) VerifyReport(reportBytes, certBytes, signer []byte) error {
+func (e *EgoSf) VerifyReport(reportBytes, certBytes, signer []byte) error {
 	report, err := enclave.VerifyRemoteReport(reportBytes)
 	if err != nil {
 		return err
