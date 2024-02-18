@@ -39,7 +39,8 @@ func main() {
 	case "Gramine":
 		log.Println("Geted libOS: Gramine")
 
-		service, err = libos.InitGramineEntry("", hostfs, &LibosSf{})
+		hostfs := &LibosSf{}
+		service, err = libos.InitGramineEntry("", hostfs)
 		if err != nil {
 			util.ExitWithMsg("activating Gramine entry failed: %s", err)
 		}
@@ -62,16 +63,22 @@ func main() {
 }
 
 type LibosSf struct {
+	afero.OsFs
 }
 
-// Decrypt implements libos.SecretFunction.
-func (l *LibosSf) Decrypt(val []byte) ([]byte, error) {
-	return val, nil
+// Read implements util.Fs.
+func (e *LibosSf) ReadFile(filename string) ([]byte, error) {
+	bt, err := afero.ReadFile(e, filename)
+	if err != nil {
+		return nil, err
+	}
+
+	return bt, nil
 }
 
-// Encrypt implements libos.SecretFunction.
-func (l *LibosSf) Encrypt(val []byte) ([]byte, error) {
-	return val, nil
+// Write implements util.Fs.
+func (e *LibosSf) WriteFile(filename string, data []byte, perm os.FileMode) error {
+	return afero.WriteFile(e, filename, data, perm)
 }
 
 func (l *LibosSf) VerifyReport(reportBytes, certBytes, signer []byte) error {

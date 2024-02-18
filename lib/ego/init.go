@@ -5,18 +5,50 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
+	"fmt"
+	"os"
 
 	"github.com/edgelesssys/ego/ecrypto"
 	"github.com/edgelesssys/ego/enclave"
+	"github.com/spf13/afero"
+	"github.com/wetee-dao/libos-entry/libos"
 )
 
 func InitEgo(chainAddr string) error {
-	// hostfs := afero.NewOsFs()
-	// return libos.PreLoad(chainAddr, hostfs, &EgoSf{})
-	return nil
+	hostfs := &EgoSf{}
+	return libos.PreLoad(chainAddr, hostfs)
 }
 
 type EgoSf struct {
+	afero.OsFs
+}
+
+// Read implements util.Fs.
+func (e *EgoSf) ReadFile(filename string) ([]byte, error) {
+	bt, err := afero.ReadFile(e, filename)
+	if err != nil {
+		return nil, err
+	}
+
+	// 解密数据
+	keyBytes, err := e.Decrypt(bt)
+	if err != nil {
+		return nil, err
+	}
+
+	return keyBytes, nil
+}
+
+// Write implements util.Fs.
+func (e *EgoSf) WriteFile(filename string, data []byte, perm os.FileMode) error {
+
+	// 加密数据
+	val, err := e.Encrypt(data)
+	if err != nil {
+		return fmt.Errorf("failed to encrypt Key: %v", err)
+	}
+
+	return afero.WriteFile(e, filename, val, perm)
 }
 
 // Decrypt implements libos.SecretFunction.

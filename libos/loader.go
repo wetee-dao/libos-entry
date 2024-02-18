@@ -14,7 +14,7 @@ import (
 	"github.com/wetee-dao/libos-entry/util"
 )
 
-func PreLoad(chainAddr string, fs afero.Fs, sf util.SecretFunction) error {
+func PreLoad(chainAddr string, fs util.Fs) error {
 	// 读取配置文件
 	// Read config file
 	isTee := util.GetEnv("IN_TEE", "0")
@@ -29,7 +29,7 @@ func PreLoad(chainAddr string, fs afero.Fs, sf util.SecretFunction) error {
 	}
 
 	// 读取签名key
-	sigKey, err := util.GetKey(fs, keyFile, sf)
+	sigKey, err := util.GetKey(fs, keyFile)
 	if err != nil {
 		return err
 	}
