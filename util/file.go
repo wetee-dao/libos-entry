@@ -43,7 +43,6 @@ func LoadKey(appFs Fs, filename string) (subkey.KeyPair, error) {
 }
 
 func GetKey(appFs Fs, KeyFile string) (subkey.KeyPair, error) {
-	log.Println("geting Key")
 	existingKey, err := LoadKey(appFs, KeyFile)
 	if err != nil {
 		return nil, err

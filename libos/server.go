@@ -18,7 +18,7 @@ func startEntryServer(cert []byte, priv crypto.PrivateKey) error {
 	}
 
 	server := http.Server{Addr: "0.0.0.0:8883", TLSConfig: &tlsCfg}
-	fmt.Println("listening ...")
+	fmt.Println("Start entry secret listening 0.0.0.0:8883 ...")
 	err := server.ListenAndServeTLS("", "")
 	return err
 }

@@ -53,11 +53,10 @@ func PreLoad(chainAddr string, fs util.Fs) error {
 	param := &util.LoadParam{
 		Address:   sigKey.SS58Address(42),
 		Time:      fmt.Sprint(time.Now().Unix()),
-		Signature: "NONE",
+		Signature: "",
 		Cert:      certBytes,
 		Report:    report,
 	}
-	pbt, _ := json.Marshal(param)
 
 	// 签名
 	// Sign
@@ -66,6 +65,7 @@ func PreLoad(chainAddr string, fs util.Fs) error {
 		return errors.Wrap(err, "SigKey")
 	}
 	param.Signature = hex.EncodeToString(sig)
+	pbt, _ := json.Marshal(param)
 
 	// 向集群请求机密
 	// Request confidential
@@ -73,8 +73,6 @@ func PreLoad(chainAddr string, fs util.Fs) error {
 	if err != nil {
 		return errors.Wrap(err, "WorkerPost")
 	}
-
-	util.ExitWithMsg("Worker Secrets", string(bt))
 
 	// 解析机密
 	// Parse the secret
@@ -110,6 +108,9 @@ func applySecrets(s *util.Secrets, fs afero.Fs) error {
 	// 设置环境变量
 	// Set environment variables
 	for key, value := range s.Env {
+		if key == "" {
+			continue
+		}
 		if err := os.Setenv(key, value); err != nil {
 			return err
 		}

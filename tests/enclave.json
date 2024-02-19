@@ -13,6 +13,15 @@
         "type": "hostfs"
     }
  ],
- "env": null,
+ "env": [
+    {
+        "name": "IN_TEE",
+        "fromHost": true
+    },
+    {
+        "name": "APPID",
+        "fromHost": true
+    }
+ ],
  "files": null
 }
