@@ -11,4 +11,5 @@ type Fs interface {
 	ReadFile(filename string) ([]byte, error)
 	WriteFile(filename string, data []byte, perm os.FileMode) error
 	VerifyReport(reportBytes, certBytes, signer []byte) error
+	SetPassword(password string)
 }

@@ -13,12 +13,12 @@ func SaveKey(appFs Fs, appKey subkey.KeyPair, filename string) error {
 	if err != nil {
 		_, err = appFs.Create(filename)
 		if err != nil {
-			return fmt.Errorf("failed to create Key file: %v", err)
+			return fmt.Errorf("SaveKey failed to create Key file: %v", err)
 		}
 	}
 
 	if err := appFs.WriteFile(filename, appKey.Seed(), 0o600); err != nil {
-		return fmt.Errorf("failed to store Key to file: %v", err)
+		return fmt.Errorf("SaveKey failed to store Key to file: %v", err)
 	}
 	return nil
 }

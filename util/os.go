@@ -7,7 +7,6 @@
 package util
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -41,7 +40,8 @@ func GetLibOS() (string, error) {
 		return "Gramine", nil
 	}
 
-	return "NotTEE", errors.New("cannot get libOS")
+	return "Gramine", nil
+	// return "NotTEE", errors.New("cannot get libOS")
 }
 
 func ExitWithMsg(format string, args ...interface{}) {

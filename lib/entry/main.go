@@ -30,7 +30,7 @@ func main() {
 
 	// Use filesystem from libOS
 	// 获取libOS的文件系统
-	hostfs := &LibosSf{}
+	hostfs := &LibosFs{}
 	util.LogWithRed("OS hostfs: ", hostfs)
 
 	var service string
@@ -41,7 +41,7 @@ func main() {
 
 		service, err = libos.InitGramineEntry("", hostfs)
 		if err != nil {
-			util.ExitWithMsg("activating Gramine entry failed: %s", err)
+			util.ExitWithMsg("Activating Gramine entry failed: %s", err)
 		}
 
 		// case "Occlum":
@@ -60,21 +60,21 @@ func main() {
 	}
 }
 
-type LibosSf struct {
+type LibosFs struct {
 	afero.OsFs
 }
 
 // Read implements util.Fs.
-func (e *LibosSf) ReadFile(filename string) ([]byte, error) {
-	return afero.ReadFile(e, filename)
+func (f *LibosFs) ReadFile(filename string) ([]byte, error) {
+	return afero.ReadFile(f, filename)
 }
 
 // Write implements util.Fs.
-func (e *LibosSf) WriteFile(filename string, data []byte, perm os.FileMode) error {
-	return afero.WriteFile(e, filename, data, perm)
+func (f *LibosFs) WriteFile(filename string, data []byte, perm os.FileMode) error {
+	return afero.WriteFile(f, filename, data, perm)
 }
 
-func (l *LibosSf) VerifyReport(reportBytes, certBytes, signer []byte) error {
+func (l *LibosFs) VerifyReport(reportBytes, certBytes, signer []byte) error {
 	report, err := eclient.VerifyRemoteReport(reportBytes)
 	if err == attestation.ErrTCBLevelInvalid {
 		fmt.Printf("Warning: TCB level is invalid: %v\n%v\n", report.TCBStatus, tcbstatus.Explain(report.TCBStatus))
@@ -103,4 +103,8 @@ func (l *LibosSf) VerifyReport(reportBytes, certBytes, signer []byte) error {
 	// For production, you must also verify that report.Debug == false
 
 	return nil
+}
+
+func (l *LibosFs) SetPassword(password string) {
+
 }

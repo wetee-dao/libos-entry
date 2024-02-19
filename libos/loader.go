@@ -10,11 +10,21 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"github.com/wetee-dao/libos-entry/util"
 )
 
 func PreLoad(chainAddr string, fs util.Fs) error {
+	certBytes, priv, report, err := GetRemoteReport()
+	if err != nil {
+		return errors.Wrap(err, "GetRemoteReport")
+	}
+
+	// 开启机密服务
+	// Start the confidential service
+	go startEntryServer(certBytes, priv)
+
 	// 读取配置文件
 	// Read config file
 	isTee := util.GetEnv("IN_TEE", "0")
@@ -31,7 +41,7 @@ func PreLoad(chainAddr string, fs util.Fs) error {
 	// 读取签名key
 	sigKey, err := util.GetKey(fs, keyFile)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Util.GetKey")
 	}
 
 	// 初始化机密注入
@@ -44,6 +54,8 @@ func PreLoad(chainAddr string, fs util.Fs) error {
 		Address:   sigKey.SS58Address(42),
 		Time:      fmt.Sprint(time.Now().Unix()),
 		Signature: "NONE",
+		Cert:      certBytes,
+		Report:    report,
 	}
 	pbt, _ := json.Marshal(param)
 
@@ -51,7 +63,7 @@ func PreLoad(chainAddr string, fs util.Fs) error {
 	// Sign
 	sig, err := sigKey.Sign([]byte(param.Time))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "SigKey")
 	}
 	param.Signature = hex.EncodeToString(sig)
 
@@ -59,22 +71,24 @@ func PreLoad(chainAddr string, fs util.Fs) error {
 	// Request confidential
 	bt, err := workerPost(tlsConfig, workerAddr+"/appLoader/"+AppID, string(pbt))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "WorkerPost")
 	}
+
+	util.ExitWithMsg("Worker Secrets", string(bt))
 
 	// 解析机密
 	// Parse the secret
 	secret := &util.Secrets{}
 	err = json.Unmarshal(bt, secret)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Secrets Unmarshal")
 	}
 
 	// 部署机密到运行环境
 	// Deploy secrets to the runtime environment
 	err = applySecrets(secret, fs)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "applySecrets")
 	}
 
 	return nil

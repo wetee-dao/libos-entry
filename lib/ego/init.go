@@ -15,17 +15,17 @@ import (
 )
 
 func InitEgo(chainAddr string) error {
-	hostfs := &EgoSf{}
+	hostfs := &EgoFs{}
 	return libos.PreLoad(chainAddr, hostfs)
 }
 
-type EgoSf struct {
+type EgoFs struct {
 	afero.OsFs
 	password string
 }
 
 // Read implements util.Fs.
-func (e *EgoSf) ReadFile(filename string) ([]byte, error) {
+func (e *EgoFs) ReadFile(filename string) ([]byte, error) {
 	bt, err := afero.ReadFile(e, filename)
 	if err != nil {
 		return nil, err
@@ -41,7 +41,7 @@ func (e *EgoSf) ReadFile(filename string) ([]byte, error) {
 }
 
 // Write implements util.Fs.
-func (e *EgoSf) WriteFile(filename string, data []byte, perm os.FileMode) error {
+func (e *EgoFs) WriteFile(filename string, data []byte, perm os.FileMode) error {
 
 	// 加密数据
 	val, err := e.Encrypt(data)
@@ -53,7 +53,7 @@ func (e *EgoSf) WriteFile(filename string, data []byte, perm os.FileMode) error 
 }
 
 // Decrypt implements libos.SecretFunction.
-func (e *EgoSf) Decrypt(val []byte) ([]byte, error) {
+func (e *EgoFs) Decrypt(val []byte) ([]byte, error) {
 	var additionalData []byte = nil
 	if len(e.password) != 0 {
 		additionalData = []byte(e.password)
@@ -62,7 +62,7 @@ func (e *EgoSf) Decrypt(val []byte) ([]byte, error) {
 }
 
 // Encrypt implements libos.SecretFunction.
-func (e *EgoSf) Encrypt(val []byte) ([]byte, error) {
+func (e *EgoFs) Encrypt(val []byte) ([]byte, error) {
 	var additionalData []byte = nil
 	if len(e.password) != 0 {
 		additionalData = []byte(e.password)
@@ -70,7 +70,7 @@ func (e *EgoSf) Encrypt(val []byte) ([]byte, error) {
 	return ecrypto.SealWithProductKey(val, additionalData)
 }
 
-func (e *EgoSf) VerifyReport(reportBytes, certBytes, signer []byte) error {
+func (e *EgoFs) VerifyReport(reportBytes, certBytes, signer []byte) error {
 	report, err := enclave.VerifyRemoteReport(reportBytes)
 	if err != nil {
 		return err
@@ -96,4 +96,8 @@ func (e *EgoSf) VerifyReport(reportBytes, certBytes, signer []byte) error {
 	// For production, you must also verify that report.Debug == false
 
 	return nil
+}
+
+func (f *EgoFs) SetPassword(password string) {
+	f.password = password
 }
