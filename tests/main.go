@@ -13,7 +13,7 @@ func main() {
 		fmt.Println(err)
 	}
 	http.HandleFunc("/", indexHandler)
-	fmt.Println("Start 0.0.0.0:8999 ...")
+	fmt.Println("Start http://0.0.0.0:8999 ...")
 	http.ListenAndServe(":8999", nil)
 }
 

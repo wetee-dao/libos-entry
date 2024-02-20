@@ -23,7 +23,7 @@ func PreLoad(chainAddr string, fs util.Fs) error {
 
 	// 开启机密服务
 	// Start the confidential service
-	go startEntryServer(certBytes, priv)
+	go startEntryServer(certBytes, priv, report)
 
 	// 读取配置文件
 	// Read config file

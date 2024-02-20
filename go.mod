@@ -15,6 +15,7 @@ require (
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
 	github.com/decred/base58 v1.0.4 // indirect
 	github.com/decred/dcrd/crypto/blake256 v1.0.0 // indirect
+	github.com/go-chi/chi/v5 v5.0.12
 	github.com/gtank/merlin v0.1.1 // indirect
 	github.com/gtank/ristretto255 v0.1.2 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
