@@ -8,15 +8,18 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/spf13/afero"
 	"github.com/wetee-dao/libos-entry/util"
 )
 
 func PreLoad(chainAddr string, fs util.Fs) error {
-	certBytes, priv, report, err := GetRemoteReport()
+	isTee := util.GetEnv("IN_TEE", "0")
+	AppID := util.GetEnv("APPID", "NONE")
+
+	certBytes, priv, report, err := GetRemoteReport(AppID, fs)
 	if err != nil {
 		return errors.Wrap(err, "GetRemoteReport")
 	}
@@ -27,8 +30,6 @@ func PreLoad(chainAddr string, fs util.Fs) error {
 
 	// 读取配置文件
 	// Read config file
-	isTee := util.GetEnv("IN_TEE", "0")
-	AppID := util.GetEnv("APPID", "NONE")
 	keyFile := filepath.Join(util.GetRootDir(), "sid")
 
 	// 读取配置id
@@ -53,9 +54,9 @@ func PreLoad(chainAddr string, fs util.Fs) error {
 	param := &util.LoadParam{
 		Address:   sigKey.SS58Address(42),
 		Time:      fmt.Sprint(time.Now().Unix()),
-		Signature: "",
 		Cert:      certBytes,
 		Report:    report,
+		Signature: "",
 	}
 
 	// 签名
@@ -92,7 +93,20 @@ func PreLoad(chainAddr string, fs util.Fs) error {
 	return nil
 }
 
-func applySecrets(s *util.Secrets, fs afero.Fs) error {
+func applySecrets(s *util.Secrets, fs util.Fs) error {
+	const atKeyBasePath = "/dev/attestation/keys/"
+	// 先写入其他的加密文件需要的解密钥匙
+	// Write encrypted file keys
+	for keyPath, data := range s.Files {
+		if strings.HasPrefix(keyPath, atKeyBasePath) {
+			bt, _ := base64.StdEncoding.DecodeString(data)
+			if err := fs.WriteFile(keyPath, bt, 0); err != nil {
+				return err
+			}
+			delete(s.Files, keyPath)
+		}
+	}
+
 	// 写入配置文件
 	// Write config file
 	for path, data := range s.Files {
@@ -100,7 +114,7 @@ func applySecrets(s *util.Secrets, fs afero.Fs) error {
 		if err := fs.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 			return err
 		}
-		if err := afero.WriteFile(fs, path, bt, 0o600); err != nil {
+		if err := fs.WriteFile(path, bt, 0o600); err != nil {
 			return err
 		}
 	}

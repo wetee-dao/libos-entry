@@ -70,6 +70,11 @@ func (e *EgoFs) Encrypt(val []byte) ([]byte, error) {
 	return ecrypto.SealWithProductKey(val, additionalData)
 }
 
+func (i *EgoFs) IssueReport(data []byte) ([]byte, error) {
+	hash := sha256.Sum256(data)
+	return enclave.GetRemoteReport(hash[:])
+}
+
 func (e *EgoFs) VerifyReport(reportBytes, certBytes, signer []byte) error {
 	report, err := enclave.VerifyRemoteReport(reportBytes)
 	if err != nil {

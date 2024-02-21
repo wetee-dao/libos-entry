@@ -10,22 +10,22 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/edgelesssys/ego/enclave"
+	"github.com/wetee-dao/libos-entry/util"
 )
 
-func GetRemoteReport() ([]byte, crypto.PrivateKey, []byte, error) {
-	cert, priv := CreateCertificate()
+func GetRemoteReport(appId string, fs util.Fs) ([]byte, crypto.PrivateKey, []byte, error) {
+	cert, priv := CreateCertificate(appId)
 	hash := sha256.Sum256(cert)
-	report, err := enclave.GetRemoteReport(hash[:])
+	report, err := fs.IssueReport(hash[:])
 	return cert, priv, report, err
 }
 
-func CreateCertificate() ([]byte, crypto.PrivateKey) {
+func CreateCertificate(appId string) ([]byte, crypto.PrivateKey) {
 	template := &x509.Certificate{
 		SerialNumber: &big.Int{},
 		Subject:      pkix.Name{CommonName: "wetee.app"},
 		NotAfter:     time.Now().Add(365 * 24 * time.Hour),
-		DNSNames:     []string{"localhost"},
+		DNSNames:     []string{appId},
 	}
 	priv, _ := rsa.GenerateKey(rand.Reader, 2048)
 	cert, _ := x509.CreateCertificate(rand.Reader, template, template, &priv.PublicKey, priv)

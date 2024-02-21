@@ -1,3 +1,4 @@
 bin
 **/libos-entry
 **.deb
+tests/main

@@ -30,7 +30,7 @@ func main() {
 
 	// Use filesystem from libOS
 	// 获取libOS的文件系统
-	hostfs := &LibosFs{}
+	hostfs := &LibosFs{LibOsType: libOS}
 	util.LogWithRed("OS hostfs: ", hostfs)
 
 	var service string
@@ -62,6 +62,7 @@ func main() {
 
 type LibosFs struct {
 	afero.OsFs
+	LibOsType string
 }
 
 // Read implements util.Fs.
@@ -103,6 +104,16 @@ func (l *LibosFs) VerifyReport(reportBytes, certBytes, signer []byte) error {
 	// For production, you must also verify that report.Debug == false
 
 	return nil
+}
+
+func (l *LibosFs) IssueReport(data []byte) ([]byte, error) {
+	switch l.LibOsType {
+	case "Gramine":
+		gramine := util.GramineQuoteIssuer{}
+		return gramine.Issue(data)
+	default:
+		return nil, errors.New("Invalid LibOsType")
+	}
 }
 
 func (l *LibosFs) SetPassword(password string) {
