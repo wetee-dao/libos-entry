@@ -8,5 +8,5 @@ done
 DIR="$( cd -P "$( dirname "$SOURCE"  )" && pwd  )"
 cd $DIR
 
-docker build -f ./Dockerfile.ego-ubuntu-20-04 -t wetee/ego-ubuntu:20.04 .
-docker push wetee/ego-ubuntu:20.04
+docker build -f ./Dockerfile.ego-ubuntu-20-04-deploy -t wetee/ego-ubuntu-deploy:20.04 .
+docker push wetee/ego-ubuntu-deploy:20.04
