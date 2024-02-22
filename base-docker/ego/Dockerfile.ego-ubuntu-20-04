@@ -1,5 +1,5 @@
 FROM ghcr.nju.edu.cn/edgelesssys/ego-deploy
 WORKDIR /
 
-RUN apt update && apt install -y curl build-essential libssl-dev
+RUN apt update && apt install -y curl build-essential libssl-dev && mkdir /wetee
 ADD sgx_default_qcnl.conf /etc/
