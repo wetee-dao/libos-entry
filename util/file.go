@@ -30,7 +30,7 @@ func LoadKey(appFs Fs, filename string) (subkey.KeyPair, error) {
 	}
 
 	// 没有key文件，返回nil
-	if keyBytes == nil && len(keyBytes) == 0 {
+	if len(keyBytes) == 0 {
 		return nil, nil
 	}
 

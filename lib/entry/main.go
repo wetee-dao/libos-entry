@@ -31,7 +31,6 @@ func main() {
 	// Use filesystem from libOS
 	// 获取libOS的文件系统
 	hostfs := &LibosFs{LibOsType: libOS}
-	util.LogWithRed("OS hostfs: ", hostfs)
 
 	var service string
 
@@ -43,13 +42,6 @@ func main() {
 		if err != nil {
 			util.ExitWithMsg("Activating Gramine entry failed: %s", err)
 		}
-
-		// case "Occlum":
-		// 	log.Println("Geted libOS: Occlum")
-		// 	service, err =  libos.InitOcclumEntry(hostfs)
-		// 	if err != nil {
-		// 		exit("activating Occlum entry failed: %s", err)
-		// 	}
 	}
 
 	// Start service
