@@ -29,13 +29,15 @@ func PreLoad(chainAddr string, fs util.Fs) error {
 	// Start the confidential service
 	go startEntryServer(certBytes, priv, report)
 
+	// 设置启动密码
+	fs.SetPassword("123456")
+
 	// 读取配置文件
 	// Read config file
 	keyFile := filepath.Join(util.GetRootDir(), "sid")
 
 	// 读取配置id
-	// Read config id 192.168.111.105
-	workerAddr := "https://192.168.111.105:8883"
+	workerAddr := "https://127.0.0.1:8883"
 	if isTee == "1" {
 		workerAddr = "https://wetee-worker.worker-system.svc.cluster.local:8883"
 	}
@@ -71,7 +73,7 @@ func PreLoad(chainAddr string, fs util.Fs) error {
 
 	// 向集群请求机密
 	// Request confidential
-	bt, err := workerPost(tlsConfig, workerAddr+"/appLoader/"+AppID, string(pbt))
+	bt, err := PostToWorker(tlsConfig, workerAddr+"/appLoader/"+AppID, string(pbt))
 	if err != nil {
 		return errors.Wrap(err, "WorkerPost")
 	}

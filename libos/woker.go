@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func workerGet(tlsConfig *tls.Config, url string) []byte {
+func GetFromWorker(tlsConfig *tls.Config, url string) []byte {
 	client := http.Client{Transport: &http.Transport{TLSClientConfig: tlsConfig}}
 	resp, err := client.Get(url)
 	if err != nil {
@@ -26,7 +26,7 @@ func workerGet(tlsConfig *tls.Config, url string) []byte {
 	return body
 }
 
-func workerPost(tlsConfig *tls.Config, url string, json string) ([]byte, error) {
+func PostToWorker(tlsConfig *tls.Config, url string, json string) ([]byte, error) {
 	client := http.Client{Transport: &http.Transport{TLSClientConfig: tlsConfig}}
 	payload := strings.NewReader(json)
 	req, _ := http.NewRequest("POST", url, payload)
