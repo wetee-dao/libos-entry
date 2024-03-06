@@ -9,21 +9,21 @@ import (
 	"github.com/pkg/errors"
 )
 
-func GetFromWorker(tlsConfig *tls.Config, url string) []byte {
+func GetFromWorker(tlsConfig *tls.Config, url string) ([]byte, error) {
 	client := http.Client{Transport: &http.Transport{TLSClientConfig: tlsConfig}}
 	resp, err := client.Get(url)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		panic(resp.Status)
+		return nil, err
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return body
+	return body, nil
 }
 
 func PostToWorker(tlsConfig *tls.Config, url string, json string) ([]byte, error) {

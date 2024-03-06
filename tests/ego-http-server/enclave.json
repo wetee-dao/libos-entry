@@ -1,0 +1,27 @@
+{
+ "exe": "hello",
+ "key": "keys/private.pem",
+ "debug": true,
+ "heapSize": 100,
+ "executableHeap": false,
+ "productID": 1,
+ "securityVersion": 1,
+ "mounts": [
+    {
+        "source": "/wetee",
+        "target": "/wetee",
+        "type": "hostfs"
+    }
+ ],
+ "env": [
+    {
+        "name": "IN_TEE",
+        "fromHost": true
+    },
+    {
+        "name": "APPID",
+        "fromHost": true
+    }
+ ],
+ "files": null
+}

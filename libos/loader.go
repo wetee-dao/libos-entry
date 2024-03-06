@@ -18,8 +18,30 @@ import (
 func PreLoad(chainAddr string, fs util.Fs) error {
 	isTee := util.GetEnv("IN_TEE", "0")
 	AppID := util.GetEnv("APPID", "NONE")
-	AppID = "AAIAAAQAAgABAAAAEhX%2F%2F%2F%2BADgAAAAAAAAAAAAsAAAAAAAD%2FAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAmsEh%2Fd3L1MFaioQfK5EngnowPzcScScPjQtmv5kiXKl3Nf0Tt9LYBC4ou2g%3D"
 
+	// 获取集群中的worker地址
+	workerAddr := "https://127.0.0.1:8883"
+	if isTee == "1" {
+		workerAddr = "https://wetee-worker.worker-system.svc.cluster.local:8883"
+	}
+
+	// 验证远程worker是否可用
+	// Initializes the confidential injection
+	tlsConfig := &tls.Config{InsecureSkipVerify: true}
+	_, err := GetFromWorker(tlsConfig, workerAddr+"/report")
+	if err != nil {
+		if strings.Contains(err.Error(), "connect: connection refused") {
+			util.LogWithRed("Worker is not run,try to run with out sgx")
+			return nil
+		}
+		return errors.Wrap(err, "GetFromWorker report")
+	}
+	// err = fs.VerifyReport(workReport, nil, nil)
+	// if err != nil {
+	// 	return errors.Wrap(err, "VerifyReport")
+	// }
+
+	// 获取本地证书
 	certBytes, priv, report, err := GetRemoteReport(AppID, fs)
 	if err != nil {
 		return errors.Wrap(err, "GetRemoteReport")
@@ -36,21 +58,11 @@ func PreLoad(chainAddr string, fs util.Fs) error {
 	// Read config file
 	keyFile := filepath.Join(util.GetRootDir(), "sid")
 
-	// 读取配置id
-	workerAddr := "https://127.0.0.1:8883"
-	if isTee == "1" {
-		workerAddr = "https://wetee-worker.worker-system.svc.cluster.local:8883"
-	}
-
 	// 读取签名key
 	sigKey, err := util.GetKey(fs, keyFile)
 	if err != nil {
 		return errors.Wrap(err, "Util.GetKey")
 	}
-
-	// 初始化机密注入
-	// Initializes the confidential injection
-	tlsConfig := &tls.Config{InsecureSkipVerify: true}
 
 	// 构建签名证明自己在集群中的身份
 	// Build the signature to prove your identity in the cluster
