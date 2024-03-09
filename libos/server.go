@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// 创建一个专门用于为外接用于证明和获取证明的服务
 func startEntryServer(cert []byte, priv crypto.PrivateKey, report []byte) error {
 	tlsCfg := tls.Config{
 		Certificates: []tls.Certificate{

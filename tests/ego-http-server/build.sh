@@ -10,9 +10,11 @@ cd $DIR
 
 tag=`date "+%Y-%m-%d-%H-%M"`
 
-docker run --device /dev/sgx/enclave --device /dev/sgx/provision \
-    -v ${PWD}:/srv wetee/ego-ubuntu-builder:20.04 \
-    bash -c "cd /srv && ego-go build -o ./hello ./hello.go"
+ego-go build -o ./hello ./hello.go
+
+# docker run --device /dev/sgx/enclave --device /dev/sgx/provision \
+#     -v ${PWD}:/srv wetee/ego-ubuntu-builder:20.04 \
+#     bash -c "cd /srv && ego-go build -o ./hello ./hello.go"
 
 docker build -t wetee/ego-hello:$tag .
 docker push wetee/ego-hello:$tag

@@ -9,8 +9,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-func GetFromWorker(tlsConfig *tls.Config, url string) ([]byte, error) {
-	client := http.Client{Transport: &http.Transport{TLSClientConfig: tlsConfig}}
+// Worker 请求通道
+type WorkerChannel struct {
+	TlsConfig *tls.Config
+}
+
+func (w *WorkerChannel) Get(url string) ([]byte, error) {
+	client := http.Client{Transport: &http.Transport{TLSClientConfig: w.TlsConfig}}
 	resp, err := client.Get(url)
 	if err != nil {
 		return nil, err
@@ -26,8 +31,8 @@ func GetFromWorker(tlsConfig *tls.Config, url string) ([]byte, error) {
 	return body, nil
 }
 
-func PostToWorker(tlsConfig *tls.Config, url string, json string) ([]byte, error) {
-	client := http.Client{Transport: &http.Transport{TLSClientConfig: tlsConfig}}
+func (w *WorkerChannel) Post(url string, json string) ([]byte, error) {
+	client := http.Client{Transport: &http.Transport{TLSClientConfig: w.TlsConfig}}
 	payload := strings.NewReader(json)
 	req, _ := http.NewRequest("POST", url, payload)
 	req.Header.Add("Content-Type", "application/json")

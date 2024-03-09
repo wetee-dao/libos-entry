@@ -20,29 +20,39 @@ func PreLoad(chainAddr string, fs util.Fs) error {
 	AppID := util.GetEnv("APPID", "NONE")
 
 	// 获取集群中的worker地址
-	workerAddr := "https://127.0.0.1:8883"
+	workerAddr := util.GetEnv("WORKER_ADDR", "https://127.0.0.1:8883")
 	if isTee == "1" {
 		workerAddr = "https://wetee-worker.worker-system.svc.cluster.local:8883"
 	}
+	util.LogWithRed("WorkerAddr", workerAddr)
 
 	// 验证远程worker是否可用
 	// Initializes the confidential injection
-	tlsConfig := &tls.Config{InsecureSkipVerify: true}
-	_, err := GetFromWorker(tlsConfig, workerAddr+"/report")
+	wChanel := WorkerChannel{TlsConfig: &tls.Config{InsecureSkipVerify: true}}
+	workerReportWrap, err := wChanel.Get(workerAddr + "/report")
 	if err != nil {
-		if strings.Contains(err.Error(), "connect: connection refused") {
-			util.LogWithRed("Worker is not run,try to run with out sgx")
-			return nil
-		}
 		return errors.Wrap(err, "GetFromWorker report")
 	}
-	// err = fs.VerifyReport(workReport, nil, nil)
-	// if err != nil {
-	// 	return errors.Wrap(err, "VerifyReport")
-	// }
+
+	workerReport := map[string]string{}
+	err = json.Unmarshal(workerReportWrap, &workerReport)
+	if err != nil {
+		return errors.Wrap(err, "Unmarshal worker report")
+	}
+
+	report, err := hex.DecodeString(workerReport["report"])
+	if err != nil {
+		return errors.Wrap(err, "Hex decode worker report")
+	}
+
+	err = fs.VerifyReport(report, nil, nil)
+	if err != nil {
+		return errors.Wrap(err, "VerifyReport")
+	}
 
 	// 获取本地证书
-	certBytes, priv, report, err := GetRemoteReport(AppID, fs)
+	// Get local certificate
+	certBytes, priv, report, err := GetLocalReport(AppID, fs)
 	if err != nil {
 		return errors.Wrap(err, "GetRemoteReport")
 	}
@@ -52,6 +62,7 @@ func PreLoad(chainAddr string, fs util.Fs) error {
 	go startEntryServer(certBytes, priv, report)
 
 	// 设置启动密码
+	// TODO password 是用户启动时输入
 	fs.SetPassword("123456")
 
 	// 读取配置文件
@@ -85,7 +96,7 @@ func PreLoad(chainAddr string, fs util.Fs) error {
 
 	// 向集群请求机密
 	// Request confidential
-	bt, err := PostToWorker(tlsConfig, workerAddr+"/appLoader/"+AppID, string(pbt))
+	bt, err := wChanel.Post(workerAddr+"/appLoader/"+AppID, string(pbt))
 	if err != nil {
 		return errors.Wrap(err, "WorkerPost")
 	}
@@ -111,11 +122,11 @@ func PreLoad(chainAddr string, fs util.Fs) error {
 }
 
 func applySecrets(s *util.Secrets, fs util.Fs) error {
-	const atKeyBasePath = "/dev/attestation/keys/"
+	const keyPrePath = "/dev/attestation/keys/"
 	// 先写入其他的加密文件需要的解密钥匙
-	// Write encrypted file keys
+	// Write encrypted key file for other
 	for keyPath, data := range s.Files {
-		if strings.HasPrefix(keyPath, atKeyBasePath) {
+		if strings.HasPrefix(keyPath, keyPrePath) {
 			bt, _ := base64.StdEncoding.DecodeString(data)
 			if err := fs.WriteFile(keyPath, bt, 0); err != nil {
 				return err

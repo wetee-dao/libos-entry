@@ -13,13 +13,15 @@ import (
 	"github.com/wetee-dao/libos-entry/util"
 )
 
-func GetRemoteReport(appId string, fs util.Fs) ([]byte, crypto.PrivateKey, []byte, error) {
+// GetRemoteReport get remote report
+func GetLocalReport(appId string, fs util.Fs) ([]byte, crypto.PrivateKey, []byte, error) {
 	cert, priv := CreateCertificate(appId)
 	hash := sha256.Sum256(cert)
 	report, err := fs.IssueReport(hash[:])
 	return cert, priv, report, err
 }
 
+// CreateCertificate create certificate
 func CreateCertificate(appId string) ([]byte, crypto.PrivateKey) {
 	template := &x509.Certificate{
 		SerialNumber: &big.Int{},

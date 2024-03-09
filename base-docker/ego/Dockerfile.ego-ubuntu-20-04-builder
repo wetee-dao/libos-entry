@@ -1,11 +1,11 @@
 FROM ubuntu:20.04
 
-RUN apt-get update && apt-get install -y wget
+RUN apt-get update && apt-get install -y curl
 
 ADD ego_1.4.1_amd64_ubuntu-20.04.deb /opt/
 
 RUN mkdir -p /etc/apt/keyrings  && \
-    wget -qO- https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key | tee /etc/apt/keyrings/intel-sgx-keyring.asc > /dev/null  && \
+    curl -s  https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key | tee /etc/apt/keyrings/intel-sgx-keyring.asc > /dev/null  && \
     echo "deb [signed-by=/etc/apt/keyrings/intel-sgx-keyring.asc arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu focal main" | tee /etc/apt/sources.list.d/intel-sgx.list  && \
     apt-get update  && \
     apt-get install -y /opt/ego_1.4.1_amd64_ubuntu-20.04.deb build-essential libssl-dev

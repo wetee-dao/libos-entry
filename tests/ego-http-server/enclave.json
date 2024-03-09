@@ -21,6 +21,10 @@
     {
         "name": "APPID",
         "fromHost": true
+    },
+    {
+        "name": "WORKER_ADDR",
+        "fromHost": true
     }
  ],
  "files": null
