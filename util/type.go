@@ -1,5 +1,6 @@
 package util
 
+// 请求开始TEE容器
 type LoadParam struct {
 	Address   string
 	Time      string
@@ -8,6 +9,7 @@ type LoadParam struct {
 	Report    []byte
 }
 
+// 去中心化的机密注入
 type Secrets struct {
 	Files map[string]string
 	Env   map[string]string

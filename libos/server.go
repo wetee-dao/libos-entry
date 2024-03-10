@@ -23,7 +23,7 @@ func startEntryServer(cert []byte, priv crypto.PrivateKey, report []byte) error 
 	}
 
 	router := chi.NewRouter()
-	router.Get("/report", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/report", func(w http.ResponseWriter, r *http.Request) {
 		resp := map[string]string{
 			"report": hex.EncodeToString(report),
 		}
