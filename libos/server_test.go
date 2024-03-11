@@ -25,7 +25,6 @@ func TestStartEntryServer(t *testing.T) {
 	req := httptest.NewRequest("GET", "https://0.0.0.0:8888/report", nil)
 	time.Sleep(time.Second * 2)
 	http.DefaultServeMux.ServeHTTP(w, req)
-
 }
 
 type MockFs struct {
