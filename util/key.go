@@ -22,8 +22,8 @@ func SetKey(sfs Fs, appKey subkey.KeyPair, filename string) error {
 	return nil
 }
 
-func GetKey(sfs Fs, KeyFile string) (subkey.KeyPair, error) {
-	keyBytes, err := sfs.ReadFile(KeyFile)
+func GetKey(sfs Fs, filename string) (subkey.KeyPair, error) {
+	keyBytes, err := sfs.ReadFile(filename)
 	// 没有key文件，创建一个新的key
 	if err != nil || len(keyBytes) == 0 {
 		LogWithRed("GetKey", "Key not found. Generating and storing a new Key "+err.Error())
@@ -31,7 +31,7 @@ func GetKey(sfs Fs, KeyFile string) (subkey.KeyPair, error) {
 		if err != nil {
 			return nil, err
 		}
-		if err := SetKey(sfs, newKey, KeyFile); err != nil {
+		if err := SetKey(sfs, newKey, filename); err != nil {
 			return nil, err
 		}
 		return newKey, nil
