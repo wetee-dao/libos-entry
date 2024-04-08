@@ -1,4 +1,4 @@
-FROM wetee/ego-ubuntu-deploy:20.04
+FROM wetee/ego-ubuntu-deploy:22.04
 WORKDIR /
 
 # Add the hello 

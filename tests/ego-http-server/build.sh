@@ -13,7 +13,7 @@ tag=`date "+%Y-%m-%d-%H-%M"`
 ego-go build -o ./hello ./hello.go
 
 # docker run --device /dev/sgx/enclave --device /dev/sgx/provision \
-#     -v ${PWD}:/srv wetee/ego-ubuntu-builder:20.04 \
+#     -v ${PWD}:/srv wetee/ego-ubuntu-builder:22.04 \
 #     bash -c "cd /srv && ego-go build -o ./hello ./hello.go"
 
 docker build -t wetee/ego-hello:$tag .

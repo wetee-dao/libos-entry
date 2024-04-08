@@ -10,5 +10,5 @@ cd $DIR
 
 ertgo build -o libos-entry -buildmode=pie -buildvcs=false ../../lib/entry/main.go
 
-docker build -f ./Dockerfile.gramine-ubuntu-20-04 -t wetee/gramine-ubuntu:20.04 .
-docker push wetee/gramine-ubuntu:20.04
+docker build -f ./Dockerfile.gramine-ubuntu-20-04 -t wetee/gramine-ubuntu:22.04 .
+docker push wetee/gramine-ubuntu:22.04

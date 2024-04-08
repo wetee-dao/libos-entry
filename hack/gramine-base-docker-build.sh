@@ -10,5 +10,5 @@ cd $DIR/../base-docker/gramine
 
 cp $DIR/../bin/libos-entry ./libos-entry
 
-docker build -f ./Dockerfile.gramine-ubuntu-20-04 -t wetee/gramine-ubuntu:20.04 .
-docker push wetee/gramine-ubuntu:20.04
+docker build -f ./Dockerfile.gramine-ubuntu-20-04 -t wetee/gramine-ubuntu:22.04 .
+docker push wetee/gramine-ubuntu:22.04
