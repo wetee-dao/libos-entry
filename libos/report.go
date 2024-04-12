@@ -7,9 +7,13 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/hex"
+	"encoding/json"
 	"math/big"
 	"time"
 
+	"github.com/edgelesssys/ego/attestation"
+	"github.com/pkg/errors"
 	"github.com/wetee-dao/libos-entry/util"
 )
 
@@ -32,4 +36,19 @@ func CreateCertificate(appId string) ([]byte, crypto.PrivateKey) {
 	priv, _ := rsa.GenerateKey(rand.Reader, 2048)
 	cert, _ := x509.CreateCertificate(rand.Reader, template, template, &priv.PublicKey, priv)
 	return cert, priv
+}
+
+func VerifyReport(workerReportWrap []byte, fs util.Fs) (*attestation.Report, error) {
+	workerReport := map[string]string{}
+	err := json.Unmarshal(workerReportWrap, &workerReport)
+	if err != nil {
+		return nil, errors.Wrap(err, "Unmarshal worker report")
+	}
+
+	report, err := hex.DecodeString(workerReport["report"])
+	if err != nil {
+		return nil, errors.Wrap(err, "Hex decode worker report")
+	}
+
+	return fs.VerifyReport(report, nil, nil)
 }

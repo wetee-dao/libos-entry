@@ -31,18 +31,7 @@ func PreLoad(chainAddr string, fs util.Fs) error {
 		return errors.Wrap(err, "GetFromWorker report")
 	}
 
-	workerReport := map[string]string{}
-	err = json.Unmarshal(workerReportWrap, &workerReport)
-	if err != nil {
-		return errors.Wrap(err, "Unmarshal worker report")
-	}
-
-	report, err := hex.DecodeString(workerReport["report"])
-	if err != nil {
-		return errors.Wrap(err, "Hex decode worker report")
-	}
-
-	err = fs.VerifyReport(report, nil, nil)
+	_, err = VerifyReport(workerReportWrap, fs)
 	if err != nil {
 		return errors.Wrap(err, "VerifyReport")
 	}
@@ -61,6 +50,11 @@ func PreLoad(chainAddr string, fs util.Fs) error {
 	// 设置启动密码
 	// TODO password 是用户启动时输入
 	fs.SetPassword("123456")
+	for i := 0; i < 1000; i++ {
+		time.Sleep(1000 * time.Millisecond)
+		util.LogWithRed("Waiting for user to set password to start...")
+
+	}
 
 	// 读取配置文件
 	// Read config file

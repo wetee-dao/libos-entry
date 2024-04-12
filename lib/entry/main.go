@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/edgelesssys/ego/attestation"
 	"github.com/spf13/afero"
 	"golang.org/x/sys/unix"
 
@@ -60,7 +61,7 @@ func (f *LibosFs) WriteFile(filename string, data []byte, perm os.FileMode) erro
 	return afero.WriteFile(f, filename, data, perm)
 }
 
-func (l *LibosFs) VerifyReport(reportBytes, certBytes, signer []byte) error {
+func (l *LibosFs) VerifyReport(reportBytes, certBytes, signer []byte) (*attestation.Report, error) {
 	// report, err := eclient.VerifyRemoteReport(reportBytes)
 	// if err == attestation.ErrTCBLevelInvalid {
 	// 	fmt.Printf("Warning: TCB level is invalid: %v\n%v\n", report.TCBStatus, tcbstatus.Explain(report.TCBStatus))
@@ -69,7 +70,7 @@ func (l *LibosFs) VerifyReport(reportBytes, certBytes, signer []byte) error {
 	// 	return err
 	// }
 
-	return nil
+	return nil, nil
 }
 
 func (l *LibosFs) IssueReport(data []byte) ([]byte, error) {

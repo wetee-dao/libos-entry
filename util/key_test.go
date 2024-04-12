@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/edgelesssys/ego/attestation"
 	"github.com/spf13/afero"
 )
 
@@ -43,8 +44,8 @@ func (f *MockFs) WriteFile(filename string, data []byte, perm os.FileMode) error
 	return afero.WriteFile(f, filename, data, perm)
 }
 
-func (l *MockFs) VerifyReport(reportBytes, certBytes, signer []byte) error {
-	return nil
+func (l *MockFs) VerifyReport(reportBytes, certBytes, signer []byte) (*attestation.Report, error) {
+	return nil, nil
 }
 
 func (l *MockFs) IssueReport(data []byte) ([]byte, error) {

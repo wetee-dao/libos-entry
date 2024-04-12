@@ -74,13 +74,13 @@ func (i *EgoFs) IssueReport(data []byte) ([]byte, error) {
 	return enclave.GetRemoteReport(hash[:])
 }
 
-func (e *EgoFs) VerifyReport(reportBytes, certBytes, signer []byte) error {
+func (e *EgoFs) VerifyReport(reportBytes, certBytes, signer []byte) (*attestation.Report, error) {
 	report, err := enclave.VerifyRemoteReport(reportBytes)
 	if err == attestation.ErrTCBLevelInvalid {
 		fmt.Printf("Warning: TCB level is invalid: %v\n%v\n", report.TCBStatus, tcbstatus.Explain(report.TCBStatus))
 		fmt.Println("We'll ignore this issue in this sample. For an app that should run in production, you must decide which of the different TCBStatus values are acceptable for you to continue.")
 	} else if err != nil {
-		return err
+		return nil, err
 	}
 
 	// hash := sha256.Sum256(certBytes)
@@ -102,7 +102,7 @@ func (e *EgoFs) VerifyReport(reportBytes, certBytes, signer []byte) error {
 
 	// For production, you must also verify that report.Debug == false
 
-	return nil
+	return &report, nil
 }
 
 func (f *EgoFs) SetPassword(password string) {
