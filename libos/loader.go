@@ -50,11 +50,10 @@ func PreLoad(chainAddr string, fs util.Fs) error {
 	// 设置启动密码
 	// TODO password 是用户启动时输入
 	fs.SetPassword("123456")
-	for i := 0; i < 1000; i++ {
-		time.Sleep(1000 * time.Millisecond)
-		util.LogWithRed("Waiting for user to set password to start...")
-
-	}
+	// for i := 0; i < 1000; i++ {
+	// 	time.Sleep(5000 * time.Millisecond)
+	// 	util.LogWithRed("Waiting for user to set password to start...")
+	// }
 
 	// 读取配置文件
 	// Read config file
