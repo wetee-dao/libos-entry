@@ -1,15 +1,17 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/wetee-dao/libos-entry/lib/ego"
 )
 
 func main() {
-	err := ego.InitEgo("")
+	err := ego.InitEgo()
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		return
 	}
 	http.HandleFunc("/", indexHandler)
 	http.ListenAndServe(":8999", nil)

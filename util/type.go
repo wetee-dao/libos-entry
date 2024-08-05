@@ -1,12 +1,11 @@
 package util
 
 // 请求开始TEE容器
-type LoadParam struct {
-	Address   string
-	Time      string
-	Signature string
-	Cert      []byte
-	Report    []byte
+type TeeParam struct {
+	Address string
+	Time    int64
+	Data    []byte
+	Report  []byte
 }
 
 // 去中心化的机密注入

@@ -6,6 +6,7 @@ import (
 
 	"github.com/edgelesssys/ego/attestation"
 	"github.com/spf13/afero"
+	"github.com/wetee-dao/go-sdk/core"
 )
 
 func TestSetKey(t *testing.T) {
@@ -48,8 +49,8 @@ func (l *MockFs) VerifyReport(reportBytes, certBytes, signer []byte) (*attestati
 	return nil, nil
 }
 
-func (l *MockFs) IssueReport(data []byte) ([]byte, error) {
-	return data, nil
+func (l *MockFs) IssueReport(pk *core.Signer, data []byte) ([]byte, int64, error) {
+	return data, 0, nil
 }
 
 func (l *MockFs) SetPassword(password string) {

@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/afero"
 	"golang.org/x/sys/unix"
 
+	"github.com/wetee-dao/go-sdk/core"
 	"github.com/wetee-dao/libos-entry/libos"
 	"github.com/wetee-dao/libos-entry/util"
 )
@@ -32,7 +33,7 @@ func main() {
 	case "Gramine":
 		log.Println("Geted libOS: Gramine")
 
-		service, err = libos.InitGramineEntry("", hostfs)
+		service, err = libos.InitGramineEntry(hostfs)
 		if err != nil {
 			util.ExitWithMsg("Activating Gramine entry failed: %s", err)
 		}
@@ -49,6 +50,7 @@ func main() {
 type LibosFs struct {
 	afero.OsFs
 	LibOsType string
+	gramine   *util.GramineQuoteIssuer
 }
 
 // Read implements util.Fs.
@@ -73,16 +75,14 @@ func (l *LibosFs) VerifyReport(reportBytes, certBytes, signer []byte) (*attestat
 	return nil, nil
 }
 
-func (l *LibosFs) IssueReport(data []byte) ([]byte, error) {
+func (l *LibosFs) IssueReport(pk *core.Signer, data []byte) ([]byte, int64, error) {
 	switch l.LibOsType {
 	case "Gramine":
-		gramine := util.GramineQuoteIssuer{}
-		return gramine.Issue(data)
+		if l.gramine == nil {
+			l.gramine = &util.GramineQuoteIssuer{}
+		}
+		return l.gramine.Issue(pk, data)
 	default:
-		return nil, errors.New("invalid libos")
+		return nil, 0, errors.New("invalid libos")
 	}
-}
-
-func (l *LibosFs) SetPassword(password string) {
-
 }

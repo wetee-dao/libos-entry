@@ -1,18 +1,17 @@
 package libos
 
 import (
+	"crypto/ed25519"
 	"crypto/tls"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"path/filepath"
-	"time"
 
 	"github.com/pkg/errors"
+	"github.com/wetee-dao/go-sdk/core"
 	"github.com/wetee-dao/libos-entry/util"
 )
 
-func PreLoad(chainAddr string, fs util.Fs) error {
+func PreLoad(fs util.Fs) error {
 	isTee := util.GetEnv("IN_TEE", "0")
 	AppID := util.GetEnv("APPID", "NONE")
 
@@ -31,57 +30,49 @@ func PreLoad(chainAddr string, fs util.Fs) error {
 		return errors.Wrap(err, "GetFromWorker report")
 	}
 
-	_, err = VerifyReport(workerReportWrap, fs)
+	workerReport := util.TeeParam{}
+	err = json.Unmarshal(workerReportWrap, &workerReport)
+	if err != nil {
+		return errors.Wrap(err, "Unmarshal worker report")
+	}
+
+	// 验证远程worker的证书
+	_, err = VerifyReport(&workerReport, fs)
 	if err != nil {
 		return errors.Wrap(err, "VerifyReport")
 	}
 
+	// 验证worker的版本是否与链上一致
+
+	// 验证worker的singer是否与链上一致
+
+	// 生成 本次部署 Key
+	_, deployKey, err := ed25519.GenerateKey(nil)
+	if err != nil {
+		return errors.Wrap(err, "ed25519.GenerateKey")
+	}
+
+	singer, err := core.Ed25519PairFromPk(deployKey, 42)
+	if err != nil {
+		return errors.Wrap(err, "core.Ed25519PairFromPk")
+	}
+
 	// 获取本地证书
 	// Get local certificate
-	certBytes, priv, report, err := GetLocalReport(AppID, fs)
+	report, time, err := fs.IssueReport(&singer, nil)
 	if err != nil {
 		return errors.Wrap(err, "GetRemoteReport")
 	}
 
-	// 开启机密服务
-	// Start the confidential service
-	go startEntryServer(certBytes, priv, report)
-
-	// 设置启动密码
-	// TODO password 是用户启动时输入
-	fs.SetPassword("123456")
-	// for i := 0; i < 1000; i++ {
-	// 	time.Sleep(5000 * time.Millisecond)
-	// 	util.LogWithRed("Waiting for user to set password to start...")
-	// }
-
-	// 读取配置文件
-	// Read config file
-	keyFile := filepath.Join(util.GetRootDir(), "sid")
-
-	// 读取签名key
-	sigKey, err := util.GetKey(fs, keyFile)
-	if err != nil {
-		return errors.Wrap(err, "Util.GetKey")
-	}
-
 	// 构建签名证明自己在集群中的身份
 	// Build the signature to prove your identity in the cluster
-	param := &util.LoadParam{
-		Address:   sigKey.SS58Address(42),
-		Time:      fmt.Sprint(time.Now().Unix()),
-		Cert:      certBytes,
-		Report:    report,
-		Signature: "",
+	param := &util.TeeParam{
+		Address: singer.SS58Address(42),
+		Time:    time,
+		Report:  report,
+		Data:    nil,
 	}
 
-	// 签名
-	// Sign
-	sig, err := sigKey.Sign([]byte(param.Time))
-	if err != nil {
-		return errors.Wrap(err, "SigKey")
-	}
-	param.Signature = hex.EncodeToString(sig)
 	pbt, _ := json.Marshal(param)
 
 	// 向集群请求机密
@@ -98,7 +89,6 @@ func PreLoad(chainAddr string, fs util.Fs) error {
 	if err != nil {
 		return errors.Wrap(err, "Secrets Unmarshal")
 	}
-
 	fmt.Println("Secrets: ", secret)
 
 	// 部署机密到运行环境

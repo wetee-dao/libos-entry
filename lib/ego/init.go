@@ -1,26 +1,32 @@
 package ego
 
 import (
-	"crypto/sha256"
+	"bytes"
+	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/edgelesssys/ego/attestation"
 	"github.com/edgelesssys/ego/attestation/tcbstatus"
 	"github.com/edgelesssys/ego/ecrypto"
 	"github.com/edgelesssys/ego/enclave"
 	"github.com/spf13/afero"
+	"github.com/vedhavyas/go-subkey/v2/ed25519"
+	"github.com/wetee-dao/go-sdk/core"
 	"github.com/wetee-dao/libos-entry/libos"
+	"github.com/wetee-dao/libos-entry/util"
 )
 
-func InitEgo(chainAddr string) error {
+func InitEgo() error {
 	hostfs := &EgoFs{}
-	return libos.PreLoad(chainAddr, hostfs)
+	return libos.PreLoad(hostfs)
 }
 
 type EgoFs struct {
 	afero.OsFs
-	password string
+	report     []byte
+	lastReport int64
 }
 
 // Read implements util.Fs.
@@ -54,27 +60,43 @@ func (e *EgoFs) WriteFile(filename string, data []byte, perm os.FileMode) error 
 // Decrypt implements libos.SecretFunction.
 func (e *EgoFs) Decrypt(val []byte) ([]byte, error) {
 	var additionalData []byte = nil
-	if len(e.password) != 0 {
-		additionalData = []byte(e.password)
-	}
 	return ecrypto.Unseal(val, additionalData)
 }
 
 // Encrypt implements libos.SecretFunction.
 func (e *EgoFs) Encrypt(val []byte) ([]byte, error) {
 	var additionalData []byte = nil
-	if len(e.password) != 0 {
-		additionalData = []byte(e.password)
-	}
 	return ecrypto.SealWithProductKey(val, additionalData)
 }
 
-func (i *EgoFs) IssueReport(data []byte) ([]byte, error) {
-	hash := sha256.Sum256(data)
-	return enclave.GetRemoteReport(hash[:])
+func (i *EgoFs) IssueReport(pk *core.Signer, data []byte) ([]byte, int64, error) {
+	timestamp := time.Now().Unix()
+	if i.report != nil && i.lastReport+30 > timestamp {
+		return i.report, i.lastReport, nil
+	}
+
+	var buf bytes.Buffer
+	buf.Write(util.Int64ToBytes(timestamp))
+	buf.Write(pk.PublicKey)
+	if len(data) > 0 {
+		buf.Write(data)
+	}
+	sig, err := pk.Sign(buf.Bytes())
+	if err != nil {
+		return nil, 0, err
+	}
+
+	report, err := enclave.GetRemoteReport(sig)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	i.lastReport = timestamp
+	i.report = report
+	return report, timestamp, nil
 }
 
-func (e *EgoFs) VerifyReport(reportBytes, certBytes, signer []byte) (*attestation.Report, error) {
+func (e *EgoFs) VerifyReport(reportBytes, msgBytes, signer []byte) (*attestation.Report, error) {
 	report, err := enclave.VerifyRemoteReport(reportBytes)
 	if err == attestation.ErrTCBLevelInvalid {
 		fmt.Printf("Warning: TCB level is invalid: %v\n%v\n", report.TCBStatus, tcbstatus.Explain(report.TCBStatus))
@@ -83,28 +105,19 @@ func (e *EgoFs) VerifyReport(reportBytes, certBytes, signer []byte) (*attestatio
 		return nil, err
 	}
 
-	// hash := sha256.Sum256(certBytes)
-	// if !bytes.Equal(report.Data[:len(hash)], hash[:]) {
-	// 	return errors.New("report data does not match the certificate's hash")
-	// }
+	sig := report.Data
+	pubkey, err := ed25519.Scheme{}.FromPublicKey(signer)
+	if err != nil {
+		return nil, err
+	}
 
-	// You can either verify the UniqueID or the tuple (SignerID, ProductID, SecurityVersion, Debug).
+	if !pubkey.Verify(msgBytes, sig) {
+		return nil, errors.New("invalid sgx report")
+	}
 
-	// if report.SecurityVersion < 2 {
-	// 	return errors.New("invalid security version")
-	// }
-	// if binary.LittleEndian.Uint16(report.ProductID) != 1234 {
-	// 	return errors.New("invalid product")
-	// }
-	// if !bytes.Equal(report.SignerID, signer) {
-	// 	return errors.New("invalid signer")
-	// }
-
-	// For production, you must also verify that report.Debug == false
+	if report.Debug {
+		return nil, errors.New("debug mode is not allowed")
+	}
 
 	return &report, nil
-}
-
-func (f *EgoFs) SetPassword(password string) {
-	f.password = password
 }
