@@ -4,19 +4,19 @@ import (
 	"crypto/ed25519"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 
-	"github.com/pkg/errors"
 	"github.com/wetee-dao/go-sdk/core"
 	"github.com/wetee-dao/libos-entry/util"
 )
 
 func PreLoad(fs util.Fs) error {
-	isTee := util.GetEnv("IN_TEE", "0")
+	IsTee := util.GetEnv("IN_TEE", "0")
 	AppID := util.GetEnv("APPID", "NONE")
 
 	// 获取集群中的worker地址
 	workerAddr := util.GetEnv("WORKER_ADDR", "https://127.0.0.1:8883")
-	if isTee == "1" {
+	if IsTee == "1" {
 		workerAddr = "https://wetee-worker.worker-system.svc.cluster.local:8883"
 	}
 	util.LogWithRed("WorkerAddr", workerAddr)
@@ -26,59 +26,59 @@ func PreLoad(fs util.Fs) error {
 	wChanel := WorkerChannel{TlsConfig: &tls.Config{InsecureSkipVerify: true}}
 	workerReportWrap, err := wChanel.Get(workerAddr + "/report")
 	if err != nil {
-		return errors.Wrap(err, "GetFromWorker report")
+		return errors.New("GetFromWorker report: " + err.Error())
 	}
 
+	// 解析远程worker的证书
+	// Parse the worker certificate
 	workerReport := util.TeeParam{}
 	err = json.Unmarshal(workerReportWrap, &workerReport)
 	if err != nil {
-		return errors.Wrap(err, "Unmarshal worker report")
+		return errors.New("Unmarshal worker report: " + err.Error())
 	}
 
 	// 验证远程worker的证书
 	_, err = VerifyReport(&workerReport, fs)
 	if err != nil {
-		return errors.Wrap(err, "VerifyReport")
+		return errors.New("VerifyReport: " + err.Error())
 	}
 
 	// 验证 worker 的版本是否与链上一致
 
-	// 验证 worker 的 singer 是否与链上一致
+	// 验证 worker 的 deploySinger 是否与链上一致
 
 	// 生成 本次部署 Key
 	_, deployKey, err := ed25519.GenerateKey(nil)
 	if err != nil {
-		return errors.Wrap(err, "ed25519.GenerateKey")
+		return errors.New("Ed25519.GenerateKey: " + err.Error())
 	}
-
-	singer, err := core.Ed25519PairFromPk(deployKey, 42)
+	deploySinger, err := core.Ed25519PairFromPk(deployKey, 42)
 	if err != nil {
-		return errors.Wrap(err, "core.Ed25519PairFromPk")
+		return errors.New("Core.Ed25519PairFromPk: " + err.Error())
 	}
 
 	// 获取本地证书
 	// Get local certificate
-	report, time, err := fs.IssueReport(&singer, nil)
+	report, time, err := fs.IssueReport(&deploySinger, nil)
 	if err != nil {
-		return errors.Wrap(err, "GetRemoteReport")
+		return errors.New("GetRemoteReport: " + err.Error())
 	}
 
 	// 构建签名证明自己在集群中的身份
 	// Build the signature to prove your identity in the cluster
 	param := &util.TeeParam{
-		Address: singer.SS58Address(42),
+		Address: deploySinger.SS58Address(42),
 		Time:    time,
 		Report:  report,
 		Data:    nil,
 	}
-
 	pbt, _ := json.Marshal(param)
 
 	// 向集群请求机密
 	// Request confidential
 	bt, err := wChanel.Post(workerAddr+"/appLoader/"+AppID, string(pbt))
 	if err != nil {
-		return errors.Wrap(err, "WorkerPost")
+		return errors.New("WorkerPost: " + err.Error())
 	}
 
 	// 解析机密
@@ -86,14 +86,14 @@ func PreLoad(fs util.Fs) error {
 	secret := &util.Secrets{}
 	err = json.Unmarshal(bt, secret)
 	if err != nil {
-		return errors.Wrap(err, "Secrets Unmarshal")
+		return errors.New("Secrets Unmarshal: " + err.Error())
 	}
 
 	// 部署机密到运行环境
 	// Deploy secrets to the runtime environment
 	err = applySecrets(secret, fs)
 	if err != nil {
-		return errors.Wrap(err, "applySecrets")
+		return errors.New("applySecrets: " + err.Error())
 	}
 
 	return nil

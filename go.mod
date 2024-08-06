@@ -11,11 +11,9 @@ require (
 	golang.org/x/sys v0.22.0
 )
 
-require (
-	github.com/centrifuge/go-substrate-rpc-client/v4 v4.2.1
-	github.com/go-chi/chi/v5 v5.0.12
-	github.com/pkg/errors v0.9.1
-)
+require github.com/centrifuge/go-substrate-rpc-client/v4 v4.2.1
+
+require golang.org/x/net v0.27.0 // indirect
 
 require (
 	github.com/ChainSafe/go-schnorrkel v1.1.0 // indirect
@@ -24,6 +22,7 @@ require (
 	github.com/decred/base58 v1.0.5 // indirect
 	github.com/decred/dcrd/crypto/blake256 v1.0.1 // indirect
 	github.com/ethereum/go-ethereum v1.10.20 // indirect
+	github.com/go-resty/resty/v2 v2.14.0
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/gtank/merlin v0.1.1 // indirect

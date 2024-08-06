@@ -5,8 +5,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
-
-	"github.com/pkg/errors"
+	"errors"
 )
 
 // Worker 请求通道
