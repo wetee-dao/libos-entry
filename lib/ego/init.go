@@ -96,22 +96,34 @@ func (i *EgoFs) IssueReport(pk *core.Signer, data []byte) ([]byte, int64, error)
 	return report, timestamp, nil
 }
 
-func (e *EgoFs) VerifyReport(reportBytes, msgBytes, signer []byte) (*attestation.Report, error) {
+func (e *EgoFs) VerifyReport(reportBytes, msgBytes, signer []byte, timestamp int64) (*attestation.Report, error) {
+	// 检查时间戳，超过 30s 签名过期
+	if timestamp+30 < time.Now().Unix() {
+		return nil, errors.New("report expired")
+	}
+
 	report, err := enclave.VerifyRemoteReport(reportBytes)
 	if err == attestation.ErrTCBLevelInvalid {
 		fmt.Printf("Warning: TCB level is invalid: %v\n%v\n", report.TCBStatus, tcbstatus.Explain(report.TCBStatus))
-		fmt.Println("We'll ignore this issue in this sample. For an app that should run in production, you must decide which of the different TCBStatus values are acceptable for you to continue.")
 	} else if err != nil {
 		return nil, err
 	}
 
-	sig := report.Data
 	pubkey, err := ed25519.Scheme{}.FromPublicKey(signer)
 	if err != nil {
 		return nil, err
 	}
 
-	if !pubkey.Verify(msgBytes, sig) {
+	var buf bytes.Buffer
+	buf.Write(util.Int64ToBytes(timestamp))
+	buf.Write(signer)
+	if len(msgBytes) > 0 {
+		buf.Write(msgBytes)
+	}
+
+	sig := report.Data
+
+	if !pubkey.Verify(buf.Bytes(), sig) {
 		return nil, errors.New("invalid sgx report")
 	}
 

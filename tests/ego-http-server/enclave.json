@@ -6,13 +6,6 @@
  "executableHeap": false,
  "productID": 1,
  "securityVersion": 1,
- "mounts": [
-    {
-        "source": "/wetee",
-        "target": "/wetee",
-        "type": "hostfs"
-    }
- ],
  "env": [
     {
         "name": "IN_TEE",

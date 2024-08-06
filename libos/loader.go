@@ -4,7 +4,6 @@ import (
 	"crypto/ed25519"
 	"crypto/tls"
 	"encoding/json"
-	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/wetee-dao/go-sdk/core"
@@ -42,9 +41,9 @@ func PreLoad(fs util.Fs) error {
 		return errors.Wrap(err, "VerifyReport")
 	}
 
-	// 验证worker的版本是否与链上一致
+	// 验证 worker 的版本是否与链上一致
 
-	// 验证worker的singer是否与链上一致
+	// 验证 worker 的 singer 是否与链上一致
 
 	// 生成 本次部署 Key
 	_, deployKey, err := ed25519.GenerateKey(nil)
@@ -89,7 +88,6 @@ func PreLoad(fs util.Fs) error {
 	if err != nil {
 		return errors.Wrap(err, "Secrets Unmarshal")
 	}
-	fmt.Println("Secrets: ", secret)
 
 	// 部署机密到运行环境
 	// Deploy secrets to the runtime environment

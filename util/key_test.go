@@ -45,7 +45,7 @@ func (f *MockFs) WriteFile(filename string, data []byte, perm os.FileMode) error
 	return afero.WriteFile(f, filename, data, perm)
 }
 
-func (l *MockFs) VerifyReport(reportBytes, certBytes, signer []byte) (*attestation.Report, error) {
+func (l *MockFs) VerifyReport(reportBytes, certBytes, signer []byte, t int64) (*attestation.Report, error) {
 	return nil, nil
 }
 

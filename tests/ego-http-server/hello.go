@@ -14,7 +14,8 @@ func main() {
 		return
 	}
 	http.HandleFunc("/", indexHandler)
-	http.ListenAndServe(":8999", nil)
+	err = http.ListenAndServe(":8999", nil)
+	fmt.Println(err)
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
