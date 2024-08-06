@@ -21,7 +21,7 @@ func (c *Chain) HandlerTeeCall(call *gtypes.TEECall, meta *gtypes.ApiMeta) {
 
 	// 回调结果到区块链
 	// callback to chain
-	recall := weteebridge.MakeInkCallbackCall(call.Id, resp, types.NewU128(*big.NewInt(0)))
+	recall := weteebridge.MakeInkCallbackCall(1, call.Id, resp, types.NewU128(*big.NewInt(0)))
 	err = c.client.SignAndSubmit(c.signer, recall, false)
 	if err != nil {
 		fmt.Println("callback to chain error:", err)
