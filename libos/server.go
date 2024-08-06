@@ -1,0 +1,29 @@
+package libos
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/wetee-dao/libos-entry/util"
+)
+
+// 创建一个专门用于为外接用于证明和获取证明的服务
+func startEntryServer(fs util.Fs) error {
+	router := chi.NewRouter()
+	router.HandleFunc("/report", func(w http.ResponseWriter, r *http.Request) {
+		resp := map[string]string{
+			"report": "",
+		}
+		bt, _ := json.Marshal(resp)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(200)
+		w.Write(bt)
+	})
+
+	server := &http.Server{Addr: ":65535", Handler: router, TLSConfig: nil}
+	fmt.Println("Start entry secret listening https://0.0.0.0:65535 ...")
+	err := server.ListenAndServeTLS("", "")
+	return err
+}
