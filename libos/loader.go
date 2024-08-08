@@ -10,15 +10,15 @@ import (
 	"github.com/wetee-dao/libos-entry/util"
 )
 
+var DefaultChainUrl string = "ws://wetee-node.worker-addon.svc.cluster.local:9944"
+
 func PreLoad(fs util.Fs) error {
-	IsTee := util.GetEnv("IN_TEE", "0")
 	AppID := util.GetEnv("APPID", "NONE")
 
 	// 获取集群中的worker地址
-	workerAddr := util.GetEnv("WORKER_ADDR", "https://127.0.0.1:8883")
-	if IsTee == "1" {
-		workerAddr = "https://wetee-worker.worker-system.svc.cluster.local:8883"
-	}
+	workerAddr := util.GetEnv("WORKER_ADDR", "https://wetee-worker.worker-system.svc.cluster.local:8883")
+	chainAddr := util.GetEnv("CHAIN_ADDR", DefaultChainUrl)
+
 	util.LogWithRed("WorkerAddr", workerAddr)
 
 	// 验证远程worker是否可用
@@ -95,6 +95,8 @@ func PreLoad(fs util.Fs) error {
 	if err != nil {
 		return errors.New("applySecrets: " + err.Error())
 	}
+
+	go startEntryServer(fs, &deploySinger, chainAddr)
 
 	return nil
 }

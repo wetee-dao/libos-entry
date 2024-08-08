@@ -1,6 +1,7 @@
 package libos
 
 import (
+	"crypto/ed25519"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,8 +15,16 @@ import (
 
 func TestStartEntryServer(t *testing.T) {
 	fs := &MockFs{}
+	_, deployKey, err := ed25519.GenerateKey(nil)
+	if err != nil {
+		t.Error(err)
+	}
+	deploySinger, err := core.Ed25519PairFromPk(deployKey, 42)
+	if err != nil {
+		t.Error(err)
+	}
 
-	go startEntryServer(fs)
+	go startEntryServer(fs, &deploySinger, "")
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "https://0.0.0.0:8888/report", nil)

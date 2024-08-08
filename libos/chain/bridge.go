@@ -5,67 +5,75 @@ import (
 	"math/big"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
-	"github.com/go-resty/resty/v2"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	gtypes "github.com/wetee-dao/go-sdk/pallet/types"
+	"github.com/wetee-dao/go-sdk/pallet/utility"
 	"github.com/wetee-dao/go-sdk/pallet/weteebridge"
 )
 
-// HandlerTeeCall 处理 tee 调用
-func (c *Chain) HandlerTeeCall(call *gtypes.TEECall, meta *gtypes.ApiMeta) {
-	// 调用 tee app
-	// call tee app
-	resp, err := CallTeeApp(call, meta)
+// list tee calls
+func (m *Chain) ListTeeCalls(cid uint64, callId []types.U128) ([]*gtypes.TEECall, []types.StorageKey, error) {
+	var pallet, method = "WeTEEBridge", "TEECalls"
+	calls := make([]interface{}, 0, len(callId))
+	for _, id := range callId {
+		calls = append(calls, id)
+	}
+	set, err := m.client.QueryDoubleMapKeys(pallet, method, cid, calls, nil)
 	if err != nil {
-		return
+		return nil, nil, err
 	}
 
-	// 回调结果到区块链
-	// callback to chain
-	recall := weteebridge.MakeInkCallbackCall(1, call.Id, resp, types.NewU128(*big.NewInt(0)))
-	err = c.client.SignAndSubmit(c.signer, recall, false)
-	if err != nil {
-		fmt.Println("callback to chain error:", err)
-	} else {
-		fmt.Println("callback to chain success")
+	var list []*gtypes.TEECall = make([]*gtypes.TEECall, 0, len(set))
+	var keys []types.StorageKey = make([]types.StorageKey, 0, len(set))
+	for _, elem := range set {
+		for _, change := range elem.Changes {
+			var d gtypes.TEECall
+
+			if err := codec.Decode(change.StorageData, &d); err != nil {
+				fmt.Println(err)
+				continue
+			}
+			keys = append(keys, change.StorageKey)
+			list = append(list, &d)
+		}
 	}
+
+	return list, keys, nil
 }
 
-// CallTeeApp 调用 tee app api
-func CallTeeApp(call *gtypes.TEECall, meta *gtypes.ApiMeta) ([]byte, error) {
-	client := resty.New()
-	req := client.R().SetBody(call.Args)
-
-	// 构造请求参数
-	api := meta.Apis[call.Method]
-	url := "http://0.0.0.0:" + fmt.Sprint(meta.Port) + string(api.Url)
-
-	// 0: get, 1: post, 2: put, 3: delete
-	switch api.Method {
-	case 0:
-		resp, err := req.Get(url)
-		if err != nil {
-			return nil, err
-		}
-		return resp.Body(), nil
-	case 1:
-		resp, err := req.Post(url)
-		if err != nil {
-			return nil, err
-		}
-		return resp.Body(), nil
-	case 2:
-		resp, err := req.Put(url)
-		if err != nil {
-			return nil, err
-		}
-		return resp.Body(), nil
-	case 3:
-		resp, err := req.Delete(url)
-		if err != nil {
-			return nil, err
-		}
-		return resp.Body(), nil
-	default:
-		return nil, nil
+func (m *Chain) GetMetaApi(w gtypes.WorkId) (gtypes.ApiMeta, error) {
+	api, ok, err := weteebridge.GetApiMetasLatest(m.client.Api.RPC.State, w)
+	if err != nil {
+		return gtypes.ApiMeta{}, err
 	}
+	if !ok {
+		return gtypes.ApiMeta{}, fmt.Errorf("not found")
+	}
+	return api, nil
+}
+
+func (m *Chain) TeeCallback(cid uint64, callId []types.U128, cakkbacks []TeeCallBack) error {
+	calls := make([]gtypes.RuntimeCall, 0, len(cakkbacks))
+	for i, cb := range cakkbacks {
+		var err []byte
+		var isErr bool
+		if cb.Err != nil {
+			err = []byte(cb.Err.Error())
+			isErr = true
+		}
+		call := weteebridge.MakeInkCallbackCall(cid, callId[i], cb.Resp, types.NewU128(*big.NewInt(0)), gtypes.OptionTByteSlice{
+			IsSome:       isErr,
+			IsNone:       !isErr,
+			AsSomeField0: err,
+		})
+		calls = append(calls, call)
+	}
+
+	call := utility.MakeBatchCall(calls)
+	return m.client.SignAndSubmit(m.signer, call, true)
+}
+
+type TeeCallBack struct {
+	Err  error
+	Resp []byte
 }

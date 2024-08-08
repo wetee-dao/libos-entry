@@ -1,4 +1,4 @@
-FROM wetee/ego-ubuntu-deploy:22.04
+FROM registry.cn-hangzhou.aliyuncs.com/wetee_dao/ego-ubuntu-deploy:22.04
 WORKDIR /
 
 # Add the hello 
@@ -8,7 +8,7 @@ ADD hello  /hello
 ADD keys   /keys
 ADD enclave.json /enclave.json
 
-EXPOSE 8999
+EXPOSE 8999 65535
 
 
 ENTRYPOINT ["/bin/sh", "-c" ,"ego sign hello && ego run hello"]

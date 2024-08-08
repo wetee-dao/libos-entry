@@ -1,15 +1,11 @@
 package chain
 
 import (
-	"crypto/ed25519"
 	"fmt"
 
 	chain "github.com/wetee-dao/go-sdk"
 	"github.com/wetee-dao/go-sdk/core"
 )
-
-// ChainClient
-var ChainClient *Chain
 
 // Chain
 type Chain struct {
@@ -17,21 +13,20 @@ type Chain struct {
 	signer *core.Signer
 }
 
-func InitChain(url string, pk *ed25519.PrivateKey) error {
+func (c *Chain) Close() {
+	c.client.Api.Client.Close()
+}
+
+func InitChain(url string, pk *core.Signer) (*Chain, error) {
 	client, err := chain.ClientInit(url, true)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	p, err := core.Ed25519PairFromPk(*pk, 42)
-	if err != nil {
-		return err
-	}
-	fmt.Println("Node chain pubkey:", p.Address)
+	fmt.Println("Node chain pubkey:", pk.Address)
 
-	ChainClient = &Chain{
+	return &Chain{
 		client: client,
-		signer: &p,
-	}
-	return nil
+		signer: pk,
+	}, nil
 }

@@ -3,14 +3,18 @@ package libos
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"net/http"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/go-chi/chi/v5"
+
+	"github.com/wetee-dao/go-sdk/core"
 	"github.com/wetee-dao/libos-entry/util"
 )
 
 // 创建一个专门用于为外接用于证明和获取证明的服务
-func startEntryServer(fs util.Fs) error {
+func startEntryServer(fs util.Fs, pk *core.Signer, chainAddr string) error {
 	router := chi.NewRouter()
 	router.HandleFunc("/report", func(w http.ResponseWriter, r *http.Request) {
 		resp := map[string]string{
@@ -22,8 +26,22 @@ func startEntryServer(fs util.Fs) error {
 		w.Write(bt)
 	})
 
-	server := &http.Server{Addr: ":65535", Handler: router, TLSConfig: nil}
-	fmt.Println("Start entry secret listening https://0.0.0.0:65535 ...")
-	err := server.ListenAndServeTLS("", "")
+	teeExecutor := &TeeExecutor{
+		chainAddr: chainAddr,
+		signer:    pk,
+		fs:        fs,
+	}
+
+	err2 := teeExecutor.runCallAndSubmit(&util.TeeTrigger{
+		ClusterId: 1,
+		Callids:   []types.U128{types.NewU128(*big.NewInt(0))},
+	})
+	fmt.Println("err", err2)
+
+	router.HandleFunc("/tee-call", teeExecutor.HandleTeeCall)
+
+	server := &http.Server{Addr: ":65535", Handler: router}
+	fmt.Println("Start entry secret listening http://0.0.0.0:65535 ...")
+	err := server.ListenAndServe()
 	return err
 }

@@ -19,16 +19,5 @@ func main() {
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(
-		`<!DOCTYPE html>
-		<html>
-			<head>
-				<meta charset="UTF-8">
-				<title>hello world</title>
-			</head>
-			<body>
-				<h1>hello world</h1>
-			</body>
-		</html>`),
-	)
+	w.Write([]byte(`hello world`))
 }

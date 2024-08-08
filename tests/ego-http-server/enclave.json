@@ -2,15 +2,11 @@
  "exe": "hello",
  "key": "keys/private.pem",
  "debug": false,
- "heapSize": 100,
- "executableHeap": false,
+ "heapSize": 500,
+ "executableHeap": true,
  "productID": 1,
  "securityVersion": 1,
  "env": [
-    {
-        "name": "IN_TEE",
-        "fromHost": true
-    },
     {
         "name": "APPID",
         "fromHost": true
@@ -18,7 +14,11 @@
     {
         "name": "WORKER_ADDR",
         "fromHost": true
-    }
+    },
+    {
+        "name": "CHAIN_ADDR",
+        "fromHost": true
+    } 
  ],
  "files": null
 }
