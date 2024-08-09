@@ -30,3 +30,7 @@ func InitChain(url string, pk *core.Signer) (*Chain, error) {
 		signer: pk,
 	}, nil
 }
+
+func (c *Chain) Client() *chain.ChainClient {
+	return c.client
+}

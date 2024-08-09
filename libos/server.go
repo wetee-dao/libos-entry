@@ -3,10 +3,8 @@ package libos
 import (
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"net/http"
 
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/go-chi/chi/v5"
 
 	"github.com/wetee-dao/go-sdk/core"
@@ -31,12 +29,6 @@ func startEntryServer(fs util.Fs, pk *core.Signer, chainAddr string) error {
 		signer:    pk,
 		fs:        fs,
 	}
-
-	err2 := teeExecutor.runCallAndSubmit(&util.TeeTrigger{
-		ClusterId: 1,
-		Callids:   []types.U128{types.NewU128(*big.NewInt(0))},
-	})
-	fmt.Println("err", err2)
 
 	router.HandleFunc("/tee-call", teeExecutor.HandleTeeCall)
 

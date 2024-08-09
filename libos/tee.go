@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/big"
 	"net/http"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/go-resty/resty/v2"
 	"github.com/vedhavyas/go-subkey/v2"
 	"github.com/wetee-dao/go-sdk/core"
@@ -54,14 +56,14 @@ func (e *TeeExecutor) HandleTeeCall(w http.ResponseWriter, r *http.Request) {
 	// 获取 worker report
 	_, err = e.fs.VerifyReport(workerReport.Report, []byte(msg), signer, workerReport.Time)
 	if err != nil {
-		fmt.Println("runCallAndSubmit", err.Error())
+		fmt.Println("VerifyReport", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	err = e.runCallAndSubmit(&t)
 	if err != nil {
-		fmt.Println("runCallAndSubmit", err.Error())
+		fmt.Println("RunCallAndSubmit", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -79,10 +81,21 @@ func (e *TeeExecutor) runCallAndSubmit(t *util.TeeTrigger) error {
 	}
 	defer c.Close()
 
+	callIds := make([]types.U128, 0, len(t.Callids))
+	for _, callid := range t.Callids {
+		n := new(big.Int)
+		n.SetString(callid, 10)
+		callIds = append(callIds, types.NewU128(*n))
+	}
+
 	// 获取 tee calls
-	calls, _, err := c.ListTeeCalls(t.ClusterId, t.Callids)
+	calls, _, err := c.ListTeeCalls(t.ClusterId, callIds)
 	if err != nil {
 		return err
+	}
+
+	if len(calls) == 0 {
+		return errors.New("no tee calls")
 	}
 
 	// 获取 meta api
@@ -94,7 +107,6 @@ func (e *TeeExecutor) runCallAndSubmit(t *util.TeeTrigger) error {
 	// 运行 tee calls
 	resps := make([]chain.TeeCallBack, 0, len(calls))
 	for _, call := range calls {
-		// runcall := c.RunTeeCall(t.ClusterId, call, &meta)
 		resp, err := CallTeeApp(call, &meta)
 		resps = append(resps, chain.TeeCallBack{
 			Err:  err,
@@ -103,10 +115,11 @@ func (e *TeeExecutor) runCallAndSubmit(t *util.TeeTrigger) error {
 	}
 
 	// 提交 proof
-	err = c.TeeCallback(t.ClusterId, t.Callids, resps)
+	err = c.TeeCallback(t.ClusterId, callIds, resps)
 	if err != nil {
 		return err
 	}
+	fmt.Println("runCallAndSubmit", "success")
 
 	return nil
 }

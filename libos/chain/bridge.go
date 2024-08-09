@@ -52,9 +52,9 @@ func (m *Chain) GetMetaApi(w gtypes.WorkId) (gtypes.ApiMeta, error) {
 	return api, nil
 }
 
-func (m *Chain) TeeCallback(cid uint64, callId []types.U128, cakkbacks []TeeCallBack) error {
-	calls := make([]gtypes.RuntimeCall, 0, len(cakkbacks))
-	for i, cb := range cakkbacks {
+func (m *Chain) TeeCallback(cid uint64, callId []types.U128, callbacks []TeeCallBack) error {
+	calls := make([]gtypes.RuntimeCall, 0, len(callbacks))
+	for i, cb := range callbacks {
 		var err []byte
 		var isErr bool
 		if cb.Err != nil {
