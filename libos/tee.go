@@ -130,8 +130,7 @@ func CallTeeApp(call *gtypes.TEECall, meta *gtypes.ApiMeta) ([]byte, error) {
 	req := client.R().SetBody(call.Args)
 
 	// 构造请求参数
-	// api := meta.Apis[call.Method]
-	api := meta.Apis[0]
+	api := meta.Apis[call.Method]
 	url := "http://0.0.0.0:" + fmt.Sprint(meta.Port) + string(api.Url)
 
 	// 0: get, 1: post, 2: put, 3: delete
