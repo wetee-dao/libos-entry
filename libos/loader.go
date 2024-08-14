@@ -1,12 +1,11 @@
 package libos
 
 import (
-	"crypto/ed25519"
+	"crypto/rand"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
 
-	"github.com/wetee-dao/go-sdk/core"
 	"github.com/wetee-dao/libos-entry/util"
 )
 
@@ -48,18 +47,14 @@ func PreLoad(fs util.Fs) error {
 	// 验证 worker 的 deploySinger 是否与链上一致
 
 	// 生成 本次部署 Key
-	_, deployKey, err := ed25519.GenerateKey(nil)
+	deploySinger, err := util.GenerateKeyPair(rand.Reader)
 	if err != nil {
-		return errors.New("Ed25519.GenerateKey: " + err.Error())
-	}
-	deploySinger, err := core.Ed25519PairFromPk(deployKey, 42)
-	if err != nil {
-		return errors.New("Core.Ed25519PairFromPk: " + err.Error())
+		return errors.New("GenerateKeyPair: " + err.Error())
 	}
 
 	// 获取本地证书
 	// Get local certificate
-	report, time, err := fs.IssueReport(&deploySinger, nil)
+	report, time, err := fs.IssueReport(deploySinger, nil)
 	if err != nil {
 		return errors.New("GetRemoteReport: " + err.Error())
 	}
@@ -96,7 +91,7 @@ func PreLoad(fs util.Fs) error {
 		return errors.New("applySecrets: " + err.Error())
 	}
 
-	go startEntryServer(fs, &deploySinger, chainAddr)
+	go startEntryServer(fs, deploySinger, chainAddr)
 
 	return nil
 }
