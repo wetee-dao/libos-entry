@@ -71,7 +71,7 @@ func PreLoad(fs util.Fs) error {
 
 	// 向集群请求机密
 	// Request confidential
-	bt, err := wChanel.Post(workerAddr+"/appLoader/"+AppID, string(pbt))
+	bt, err := wChanel.Post(workerAddr+"/appLaunch/"+AppID, string(pbt))
 	if err != nil {
 		return errors.New("WorkerPost: " + err.Error())
 	}

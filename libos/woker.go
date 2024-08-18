@@ -2,10 +2,11 @@ package libos
 
 import (
 	"crypto/tls"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
-	"errors"
+	"time"
 )
 
 // Worker 请求通道
@@ -14,7 +15,7 @@ type WorkerChannel struct {
 }
 
 func (w *WorkerChannel) Get(url string) ([]byte, error) {
-	client := http.Client{Transport: &http.Transport{TLSClientConfig: w.TlsConfig}}
+	client := http.Client{Transport: &http.Transport{TLSClientConfig: w.TlsConfig}, Timeout: time.Minute}
 	resp, err := client.Get(url)
 	if err != nil {
 		return nil, err
@@ -31,7 +32,7 @@ func (w *WorkerChannel) Get(url string) ([]byte, error) {
 }
 
 func (w *WorkerChannel) Post(url string, json string) ([]byte, error) {
-	client := http.Client{Transport: &http.Transport{TLSClientConfig: w.TlsConfig}}
+	client := http.Client{Transport: &http.Transport{TLSClientConfig: w.TlsConfig}, Timeout: time.Minute}
 	payload := strings.NewReader(json)
 	req, _ := http.NewRequest("POST", url, payload)
 	req.Header.Add("Content-Type", "application/json")

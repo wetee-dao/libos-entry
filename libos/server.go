@@ -15,10 +15,24 @@ import (
 func startEntryServer(fs util.Fs, pk *core.Signer, chainAddr string) error {
 	router := chi.NewRouter()
 	router.HandleFunc("/report", func(w http.ResponseWriter, r *http.Request) {
-		resp := map[string]string{
-			"report": "",
+		// 获取 TEE 根证书
+		report, t, err := fs.IssueReport(pk, nil)
+		if err != nil {
+			w.WriteHeader(500)
+			w.Write([]byte(err.Error()))
 		}
-		bt, _ := json.Marshal(resp)
+
+		// 上传 TEE 证书
+		// hash := blake2b.Sum256(report)
+		param := util.TeeParam{
+			Report:  report,
+			Time:    t,
+			TeeType: 0,
+			Address: pk.SS58Address(42),
+			Data:    nil,
+		}
+		bt, _ := json.Marshal(param)
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		w.Write(bt)

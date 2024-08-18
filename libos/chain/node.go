@@ -22,17 +22,17 @@ func (c *Chain) RegisterNode(signer *core.Signer, pubkey []byte) error {
 
 // 获取节点列表
 // GetNodeList get node list
-func (c *Chain) GetNodeList() ([]*types.Node, error) {
+func (c *Chain) GetNodeList() ([][]byte, error) {
 	ret, err := c.client.QueryMapAll("WeTEEDsecret", "Nodes")
 	if err != nil {
 		return nil, err
 	}
 
-	nodes := make([]*types.Node, 0)
+	nodes := make([][]byte, 0)
 	for _, elem := range ret {
 		for _, change := range elem.Changes {
-			n := &types.Node{}
-			if err := codec.Decode(change.StorageData, n); err != nil {
+			n := []byte{}
+			if err := codec.Decode(change.StorageData, &n); err != nil {
 				util.LogWithRed("codec.Decode", err)
 				continue
 			}
