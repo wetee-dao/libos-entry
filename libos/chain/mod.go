@@ -9,12 +9,12 @@ import (
 
 // Chain
 type Chain struct {
-	client *chain.ChainClient
+	*chain.ChainClient
 	signer *core.Signer
 }
 
 func (c *Chain) Close() {
-	c.client.Api.Client.Close()
+	c.Api.Client.Close()
 }
 
 func InitChain(url string, pk *core.Signer) (*Chain, error) {
@@ -26,11 +26,7 @@ func InitChain(url string, pk *core.Signer) (*Chain, error) {
 	fmt.Println("Node chain pubkey:", pk.Address)
 
 	return &Chain{
-		client: client,
-		signer: pk,
+		ChainClient: client,
+		signer:      pk,
 	}, nil
-}
-
-func (c *Chain) Client() *chain.ChainClient {
-	return c.client
 }

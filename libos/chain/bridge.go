@@ -18,7 +18,7 @@ func (m *Chain) ListTeeCalls(cid uint64, callId []types.U128) ([]*gtypes.TEECall
 	for _, id := range callId {
 		calls = append(calls, id)
 	}
-	set, err := m.client.QueryDoubleMapKeys(pallet, method, cid, calls, nil)
+	set, err := m.QueryDoubleMapKeys(pallet, method, cid, calls, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -42,7 +42,7 @@ func (m *Chain) ListTeeCalls(cid uint64, callId []types.U128) ([]*gtypes.TEECall
 }
 
 func (m *Chain) GetMetaApi(w gtypes.WorkId) (gtypes.ApiMeta, error) {
-	api, ok, err := weteebridge.GetApiMetasLatest(m.client.Api.RPC.State, w)
+	api, ok, err := weteebridge.GetApiMetasLatest(m.Api.RPC.State, w)
 	if err != nil {
 		return gtypes.ApiMeta{}, err
 	}
@@ -70,7 +70,7 @@ func (m *Chain) TeeCallback(cid uint64, callId []types.U128, callbacks []TeeCall
 	}
 
 	call := utility.MakeBatchCall(calls)
-	return m.client.SignAndSubmit(m.signer, call, true)
+	return m.SignAndSubmit(m.signer, call, true)
 }
 
 type TeeCallBack struct {

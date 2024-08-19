@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/wetee-dao/libos-entry/libos/chain"
 	"github.com/wetee-dao/libos-entry/util"
 )
 
@@ -36,21 +37,24 @@ func PreLoad(fs util.Fs) error {
 		return errors.New("Unmarshal worker report: " + err.Error())
 	}
 
-	// 验证远程worker的证书
-	_, err = VerifyReport(&workerReport, fs)
-	if err != nil {
-		return errors.New("VerifyReport: " + err.Error())
-	}
-
-	// 验证 worker 的版本是否与链上一致
-
-	// 验证 worker 的 deploySinger 是否与链上一致
-
 	// 生成 本次部署 Key
 	deploySinger, err := util.GenerateKeyPair(rand.Reader)
 	if err != nil {
 		return errors.New("GenerateKeyPair: " + err.Error())
 	}
+
+	// 初始化去快链链接
+	c, err := chain.InitChain(chainAddr, deploySinger)
+	if err != nil {
+		c.Close()
+		return errors.New("chain.InitChain: " + err.Error())
+	}
+	_, err = VerifyWorker(&workerReport, fs, c.ChainClient)
+	if err != nil {
+		c.Close()
+		return errors.New("VerifyReport: " + err.Error())
+	}
+	c.Close()
 
 	// 获取本地证书
 	// Get local certificate
