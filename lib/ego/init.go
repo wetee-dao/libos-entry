@@ -12,6 +12,7 @@ import (
 	"github.com/edgelesssys/ego/ecrypto"
 	"github.com/edgelesssys/ego/enclave"
 	"github.com/spf13/afero"
+	"github.com/vedhavyas/go-subkey/v2"
 	"github.com/vedhavyas/go-subkey/v2/ed25519"
 	"github.com/wetee-dao/go-sdk/core"
 	"github.com/wetee-dao/libos-entry/libos"
@@ -69,10 +70,15 @@ func (e *EgoFs) Encrypt(val []byte) ([]byte, error) {
 	return ecrypto.SealWithProductKey(val, additionalData)
 }
 
-func (i *EgoFs) IssueReport(pk *core.Signer, data []byte) ([]byte, int64, error) {
+func (i *EgoFs) IssueReport(pk *core.Signer, data []byte) (*util.TeeParam, error) {
 	timestamp := time.Now().Unix()
 	if i.report != nil && i.lastReport+30 > timestamp {
-		return i.report, i.lastReport, nil
+		return &util.TeeParam{
+			Time:    i.lastReport,
+			Address: pk.SS58Address(42),
+			Report:  i.report,
+			Data:    data,
+		}, nil
 	}
 
 	var buf bytes.Buffer
@@ -83,20 +89,34 @@ func (i *EgoFs) IssueReport(pk *core.Signer, data []byte) ([]byte, int64, error)
 	}
 	sig, err := pk.Sign(buf.Bytes())
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	report, err := enclave.GetRemoteReport(sig)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	i.lastReport = timestamp
 	i.report = report
-	return report, timestamp, nil
+
+	return &util.TeeParam{
+		Time:    timestamp,
+		Address: pk.SS58Address(42),
+		Report:  report,
+		Data:    data,
+	}, nil
 }
 
-func (e *EgoFs) VerifyReport(reportBytes, msgBytes, signer []byte, timestamp int64) (*attestation.Report, error) {
+func (e *EgoFs) VerifyReport(workerReport *util.TeeParam) (*util.TeeReport, error) {
+	var reportBytes, msgBytes, timestamp = workerReport.Report, workerReport.Data, workerReport.Time
+
+	// decode address
+	_, signer, err := subkey.SS58Decode(workerReport.Address)
+	if err != nil {
+		return nil, errors.New("SS58 decode: " + err.Error())
+	}
+
 	// 检查时间戳，超过 30s 签名过期
 	if timestamp+30 < time.Now().Unix() {
 		return nil, errors.New("report expired")
@@ -131,5 +151,10 @@ func (e *EgoFs) VerifyReport(reportBytes, msgBytes, signer []byte, timestamp int
 		return nil, errors.New("debug mode is not allowed")
 	}
 
-	return &report, nil
+	return &util.TeeReport{
+		TeeType:       workerReport.TeeType,
+		CodeSigner:    report.SignerID,
+		CodeSignature: report.UniqueID,
+		CodeProductID: report.ProductID,
+	}, nil
 }

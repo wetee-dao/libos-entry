@@ -10,7 +10,6 @@ import (
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/go-resty/resty/v2"
-	"github.com/vedhavyas/go-subkey/v2"
 	"github.com/wetee-dao/go-sdk/core"
 	gtypes "github.com/wetee-dao/go-sdk/pallet/types"
 	"github.com/wetee-dao/libos-entry/libos/chain"
@@ -44,17 +43,10 @@ func (e *TeeExecutor) HandleTeeCall(w http.ResponseWriter, r *http.Request) {
 
 	workerReport := t.Tee
 	msg := fmt.Sprint(t.ClusterId, t.Callids)
-
-	// decode address
-	_, signer, err := subkey.SS58Decode(t.Tee.Address)
-	if err != nil {
-		fmt.Println("subkey.SS58Decode ", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	workerReport.Data = []byte(msg)
 
 	// 获取 worker report
-	_, err = e.fs.VerifyReport(workerReport.Report, []byte(msg), signer, workerReport.Time)
+	_, err = e.fs.VerifyReport(&workerReport)
 	if err != nil {
 		fmt.Println("VerifyReport", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -89,7 +81,7 @@ func (e *TeeExecutor) runCallAndSubmit(t *util.TeeTrigger) error {
 	}
 
 	// 获取 tee calls
-	calls, _, err := c.ListTeeCalls(t.ClusterId, callIds)
+	calls, callIds, _, err := c.ListTeeCalls(t.ClusterId, callIds)
 	if err != nil {
 		return err
 	}
@@ -105,13 +97,15 @@ func (e *TeeExecutor) runCallAndSubmit(t *util.TeeTrigger) error {
 	}
 
 	// 运行 tee calls
-	resps := make([]chain.TeeCallBack, 0, len(calls))
+	resps := make([]util.TeeCallBack, 0, len(calls))
 	for _, call := range calls {
 		resp, err := callTeeApp(call, &meta)
-		resps = append(resps, chain.TeeCallBack{
-			Err:  err,
-			Resp: resp,
-		})
+		if err != nil {
+			resp = &util.TeeCallBack{
+				Err: err.Error(),
+			}
+		}
+		resps = append(resps, *resp)
 	}
 
 	// 提交 proof
@@ -125,7 +119,7 @@ func (e *TeeExecutor) runCallAndSubmit(t *util.TeeTrigger) error {
 }
 
 // CallTeeApp 调用 tee app api
-func callTeeApp(call *gtypes.TEECall, meta *gtypes.ApiMeta) ([]byte, error) {
+func callTeeApp(call *gtypes.TEECall, meta *gtypes.ApiMeta) (*util.TeeCallBack, error) {
 	client := resty.New()
 	req := client.R().SetBody(call.Args)
 
@@ -133,6 +127,7 @@ func callTeeApp(call *gtypes.TEECall, meta *gtypes.ApiMeta) ([]byte, error) {
 	api := meta.Apis[call.Method]
 	url := "http://0.0.0.0:" + fmt.Sprint(meta.Port) + string(api.Url)
 
+	var body []byte
 	// 0: get, 1: post, 2: put, 3: delete
 	switch api.Method {
 	case 0:
@@ -140,26 +135,34 @@ func callTeeApp(call *gtypes.TEECall, meta *gtypes.ApiMeta) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		return resp.Body(), nil
+		body = resp.Body()
 	case 1:
 		resp, err := req.Post(url)
 		if err != nil {
 			return nil, err
 		}
-		return resp.Body(), nil
+		body = resp.Body()
 	case 2:
 		resp, err := req.Put(url)
 		if err != nil {
 			return nil, err
 		}
-		return resp.Body(), nil
+		body = resp.Body()
 	case 3:
 		resp, err := req.Delete(url)
 		if err != nil {
 			return nil, err
 		}
-		return resp.Body(), nil
+		body = resp.Body()
 	default:
 		return nil, nil
 	}
+
+	fmt.Println("callTeeApp", "body", string(body))
+	resp := util.UnmarshalToArgs(body)
+	if resp == nil {
+		return nil, errors.New("UnmarshalToArgs error")
+	}
+
+	return resp, nil
 }

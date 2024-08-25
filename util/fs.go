@@ -3,7 +3,6 @@ package util
 import (
 	"os"
 
-	"github.com/edgelesssys/ego/attestation"
 	"github.com/spf13/afero"
 	"github.com/wetee-dao/go-sdk/core"
 )
@@ -13,6 +12,7 @@ type Fs interface {
 	ReadFile(filename string) ([]byte, error)
 	WriteFile(filename string, data []byte, perm os.FileMode) error
 
-	VerifyReport(reportBytes, data, signer []byte, t int64) (*attestation.Report, error)
-	IssueReport(pk *core.Signer, data []byte) ([]byte, int64, error)
+	// VerifyReport(reportBytes, data, signer []byte, t int64) (*attestation.Report, error)
+	VerifyReport(workerReport *TeeParam) (*TeeReport, error)
+	IssueReport(pk *core.Signer, data []byte) (*TeeParam, error)
 }

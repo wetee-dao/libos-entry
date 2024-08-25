@@ -58,18 +58,11 @@ func PreLoad(fs util.Fs) error {
 
 	// 获取本地证书
 	// Get local certificate
-	report, time, err := fs.IssueReport(deploySinger, nil)
-	if err != nil {
-		return errors.New("GetRemoteReport: " + err.Error())
-	}
-
 	// 构建签名证明自己在集群中的身份
 	// Build the signature to prove your identity in the cluster
-	param := &util.TeeParam{
-		Address: deploySinger.SS58Address(42),
-		Time:    time,
-		Report:  report,
-		Data:    nil,
+	param, err := fs.IssueReport(deploySinger, nil)
+	if err != nil {
+		return errors.New("GetRemoteReport: " + err.Error())
 	}
 	pbt, _ := json.Marshal(param)
 

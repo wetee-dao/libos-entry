@@ -18,7 +18,7 @@ func VerifyWorker(reportData *util.TeeParam, fs util.Fs, client *chain.ChainClie
 		return nil, errors.New("SS58 decode: " + err.Error())
 	}
 
-	report, err := VerifyReport(reportData, fs)
+	report, err := fs.VerifyReport(reportData)
 	if err != nil {
 		return nil, errors.New("verify cluster report: " + err.Error())
 	}
@@ -29,11 +29,11 @@ func VerifyWorker(reportData *util.TeeParam, fs util.Fs, client *chain.ChainClie
 		return nil, errors.New("GetWorkerCode error:" + err.Error())
 	}
 	if len(codeHash) > 0 || len(codeSigner) > 0 {
-		if hex.EncodeToString(codeHash) != hex.EncodeToString(report.UniqueID) {
+		if hex.EncodeToString(codeHash) != hex.EncodeToString(report.CodeSignature) {
 			return nil, errors.New("worker code hash error")
 		}
 
-		if hex.EncodeToString(codeSigner) != hex.EncodeToString(report.SignerID) {
+		if hex.EncodeToString(codeSigner) != hex.EncodeToString(report.CodeSigner) {
 			return nil, errors.New("worker signer error")
 		}
 	}
