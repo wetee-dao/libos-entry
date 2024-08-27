@@ -32,7 +32,7 @@ func main() {
 	case "Gramine":
 		log.Println("Geted libOS: Gramine")
 
-		service, err = libos.InitGramineEntry(hostfs)
+		service, err = libos.InitGramineEntry(hostfs, false)
 		if err != nil {
 			util.ExitWithMsg("Activating Gramine entry failed: %s", err)
 		}

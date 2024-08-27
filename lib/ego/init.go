@@ -21,7 +21,7 @@ import (
 
 func InitEgo() error {
 	hostfs := &EgoFs{}
-	return libos.PreLoad(hostfs)
+	return libos.PreLoad(hostfs, false)
 }
 
 type EgoFs struct {

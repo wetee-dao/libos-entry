@@ -113,7 +113,6 @@ func (e *TeeExecutor) runCallAndSubmit(t *util.TeeTrigger) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("runCallAndSubmit", "success")
 
 	return nil
 }
@@ -128,6 +127,7 @@ func callTeeApp(call *gtypes.TEECall, meta *gtypes.ApiMeta) (*util.TeeCallBack, 
 	url := "http://0.0.0.0:" + fmt.Sprint(meta.Port) + string(api.Url)
 
 	var body []byte
+
 	// 0: get, 1: post, 2: put, 3: delete
 	switch api.Method {
 	case 0:

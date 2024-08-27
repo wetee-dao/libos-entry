@@ -12,7 +12,7 @@ import (
 
 var DefaultChainUrl string = "ws://wetee-node.worker-addon.svc.cluster.local:9944"
 
-func PreLoad(fs util.Fs) error {
+func PreLoad(fs util.Fs, isMain bool) error {
 	AppID := util.GetEnv("APPID", "NONE")
 
 	// 获取集群中的worker地址
@@ -88,7 +88,11 @@ func PreLoad(fs util.Fs) error {
 		return errors.New("applySecrets: " + err.Error())
 	}
 
-	go startEntryServer(fs, deploySinger, chainAddr)
+	if isMain {
+		startEntryServer(fs, deploySinger, chainAddr)
+	} else {
+		go startEntryServer(fs, deploySinger, chainAddr)
+	}
 
 	return nil
 }

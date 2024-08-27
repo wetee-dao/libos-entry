@@ -1,88 +1,75 @@
-package ego
+package main
 
 import (
-	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/spf13/afero"
+	"golang.org/x/sys/unix"
+
 	"github.com/wetee-dao/go-sdk/core"
 	"github.com/wetee-dao/libos-entry/libos"
 	"github.com/wetee-dao/libos-entry/util"
 )
 
-func InitEgo() error {
-	hostfs := &CvmFs{}
-	return libos.PreLoad(hostfs)
+func main() {
+	// Get libOS based on uname
+	// 获取 libOS 类型
+	libOS, err := util.GetLibOS()
+	if err != nil {
+		util.ExitWithMsg("Failed to get libOS: %s", err)
+	}
+
+	// Use filesystem from libOS
+	// 获取libOS的文件系统
+	hostfs := &LibosFs{LibOsType: libOS}
+
+	var service string
+	service, err = libos.InitGramineEntry(hostfs, true)
+	if err != nil {
+		util.ExitWithMsg("Activating entry failed: %s", err)
+	}
+
+	// Start service
+	// 开启服务
+	util.LogWithRed("Starting service ", strings.Join(os.Args, " "))
+	if err := unix.Exec(service, os.Args, os.Environ()); err != nil {
+		util.ExitWithMsg("Starting service error", err.Error())
+	}
 }
 
-type CvmFs struct {
+type LibosFs struct {
 	afero.OsFs
-	report     []byte
-	lastReport int64
+	LibOsType string
 }
 
 // Read implements util.Fs.
-func (e *CvmFs) ReadFile(filename string) ([]byte, error) {
-	bt, err := afero.ReadFile(e, filename)
-	if err != nil {
-		return nil, err
-	}
-
-	// 解密数据
-	keyBytes, err := e.Decrypt(bt)
-	if err != nil {
-		return nil, err
-	}
-
-	return keyBytes, nil
+func (f *LibosFs) ReadFile(filename string) ([]byte, error) {
+	return afero.ReadFile(f, filename)
 }
 
 // Write implements util.Fs.
-func (e *CvmFs) WriteFile(filename string, data []byte, perm os.FileMode) error {
-
-	// 加密数据
-	val, err := e.Encrypt(data)
-	if err != nil {
-		return fmt.Errorf("failed to encrypt Key: %v", err)
-	}
-
-	return afero.WriteFile(e, filename, val, perm)
+func (f *LibosFs) WriteFile(filename string, data []byte, perm os.FileMode) error {
+	return afero.WriteFile(f, filename, data, perm)
 }
 
-// Decrypt implements libos.SecretFunction.
-func (e *CvmFs) Decrypt(val []byte) ([]byte, error) {
-	return val, nil
-}
-
-// Encrypt implements libos.SecretFunction.
-func (e *CvmFs) Encrypt(val []byte) ([]byte, error) {
-	return val, nil
-}
-
-func (i *CvmFs) IssueReport(pk *core.Signer, data []byte) (*util.TeeParam, error) {
-	timestamp := time.Now().Unix()
-	if i.report != nil && i.lastReport+30 > timestamp {
-		return &util.TeeParam{
-			Time:    i.lastReport,
-			Address: pk.SS58Address(42),
-			Report:  i.report,
-			Data:    data,
-		}, nil
-	}
-
-	return &util.TeeParam{
-		Time:    timestamp,
-		Address: pk.SS58Address(42),
-		Report:  []byte{},
-		Data:    data,
+func (l *LibosFs) VerifyReport(workerReport *util.TeeParam) (*util.TeeReport, error) {
+	return &util.TeeReport{
+		TeeType:       workerReport.TeeType,
+		CodeSigner:    []byte{},
+		CodeSignature: []byte{},
+		CodeProductID: []byte{},
 	}, nil
 }
 
-func (e *CvmFs) VerifyReport(workerReport *util.TeeParam) (*util.TeeReport, error) {
-	return &util.TeeReport{
-		CodeSignature: []byte{},
-		CodeSigner:    []byte{},
-		CodeProductID: []byte{},
+func (l *LibosFs) IssueReport(pk *core.Signer, data []byte) (*util.TeeParam, error) {
+	timestamp := time.Now().Unix()
+	return &util.TeeParam{
+		Address: pk.Address,
+		Time:    timestamp,
+		TeeType: 1,
+		Data:    data,
+		Report:  []byte{},
 	}, nil
 }
