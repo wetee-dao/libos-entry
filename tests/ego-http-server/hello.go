@@ -7,7 +7,7 @@ import (
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	gtypes "github.com/wetee-dao/go-sdk/pallet/types"
-	"github.com/wetee-dao/libos-entry/lib/ego"
+	"github.com/wetee-dao/libos-entry/entry/ego"
 	"github.com/wetee-dao/libos-entry/util"
 )
 
