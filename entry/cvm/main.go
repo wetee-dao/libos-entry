@@ -54,6 +54,8 @@ func (f *LibosFs) WriteFile(filename string, data []byte, perm os.FileMode) erro
 	return afero.WriteFile(f, filename, data, perm)
 }
 
+// VerifyReport 函数接收一个 *util.TeeParam 类型指针 workerReport
+// 并返回一个 *util.TeeReport 类型的指针和一个空的错误
 func (l *LibosFs) VerifyReport(workerReport *util.TeeParam) (*util.TeeReport, error) {
 	return &util.TeeReport{
 		TeeType:       workerReport.TeeType,
@@ -63,6 +65,16 @@ func (l *LibosFs) VerifyReport(workerReport *util.TeeParam) (*util.TeeReport, er
 	}, nil
 }
 
+// IssueReport 函数为给定的签名者和数据生成一个 TeeParam 报告对象
+// 参数：
+//
+//	pk：签名者对象，包含地址信息
+//	data：要包含在报告中的数据
+//
+// 返回值：
+//
+//	*util.TeeParam：包含地址、时间、类型、数据和空报告字段的 TeeParam 对象指针
+//	error：如果发生错误，返回错误；如果成功，返回 nil
 func (l *LibosFs) IssueReport(pk *core.Signer, data []byte) (*util.TeeParam, error) {
 	timestamp := time.Now().Unix()
 	return &util.TeeParam{

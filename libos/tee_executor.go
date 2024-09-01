@@ -28,7 +28,7 @@ func (e *TeeExecutor) HandleTeeCall(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		r.Body.Close()
-		fmt.Println("io.ReadAll", err.Error())
+		fmt.Println("io.ReadAll:", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -36,7 +36,7 @@ func (e *TeeExecutor) HandleTeeCall(w http.ResponseWriter, r *http.Request) {
 
 	err = json.Unmarshal(body, &t)
 	if err != nil {
-		fmt.Println("json.Unmarshal(", err.Error())
+		fmt.Println("json.Unmarshal:", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -48,14 +48,14 @@ func (e *TeeExecutor) HandleTeeCall(w http.ResponseWriter, r *http.Request) {
 	// 获取 worker report
 	_, err = e.fs.VerifyReport(&workerReport)
 	if err != nil {
-		fmt.Println("VerifyReport", err.Error())
+		fmt.Println("VerifyReport:", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	err = e.runCallAndSubmit(&t)
 	if err != nil {
-		fmt.Println("RunCallAndSubmit", err.Error())
+		fmt.Println("RunCallAndSubmit:", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
