@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	err := ego.InitEgo()
+	err := ego.InitLocalEgo()
 	if err != nil {
 		fmt.Println(err)
 		return

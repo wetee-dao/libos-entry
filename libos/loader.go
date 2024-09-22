@@ -43,7 +43,7 @@ func PreLoad(fs util.Fs, isMain bool) error {
 		return errors.New("GenerateKeyPair: " + err.Error())
 	}
 
-	// 初始化去快链链接
+	// 初始化区块链链接
 	c, err := chain.InitChain(chainAddr, deploySinger)
 	if err != nil {
 		c.Close()
@@ -92,6 +92,22 @@ func PreLoad(fs util.Fs, isMain bool) error {
 		startEntryServer(fs, deploySinger, chainAddr)
 	} else {
 		go startEntryServer(fs, deploySinger, chainAddr)
+	}
+
+	return nil
+}
+
+func LocalLoad(fs util.Fs, isMain bool) error {
+	// 生成 本次部署 Key
+	deploySinger, err := util.GenerateKeyPair(rand.Reader)
+	if err != nil {
+		return errors.New("GenerateKeyPair: " + err.Error())
+	}
+
+	if isMain {
+		startEntryServer(fs, deploySinger, "")
+	} else {
+		go startEntryServer(fs, deploySinger, "")
 	}
 
 	return nil

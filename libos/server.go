@@ -28,13 +28,14 @@ func startEntryServer(fs util.Fs, pk *core.Signer, chainAddr string) error {
 		w.Write(bt)
 	})
 
-	teeExecutor := &TeeExecutor{
-		chainAddr: chainAddr,
-		signer:    pk,
-		fs:        fs,
+	if chainAddr != "" {
+		teeExecutor := &TeeExecutor{
+			chainAddr: chainAddr,
+			signer:    pk,
+			fs:        fs,
+		}
+		router.HandleFunc("/tee-call", teeExecutor.HandleTeeCall)
 	}
-
-	router.HandleFunc("/tee-call", teeExecutor.HandleTeeCall)
 
 	server := &http.Server{Addr: ":65535", Handler: router}
 	fmt.Println("Start entry secret listening http://0.0.0.0:65535 ...")

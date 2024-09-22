@@ -24,6 +24,11 @@ func InitEgo() error {
 	return libos.PreLoad(hostfs, false)
 }
 
+func InitLocalEgo() error {
+	hostfs := &EgoFs{}
+	return libos.LocalLoad(hostfs, false)
+}
+
 type EgoFs struct {
 	afero.OsFs
 	report     []byte
