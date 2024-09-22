@@ -7,16 +7,20 @@ import (
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	gtypes "github.com/wetee-dao/go-sdk/pallet/types"
+
+	// "github.com/wetee-dao/libos-entry/entry/ego"
 	"github.com/wetee-dao/libos-entry/entry/ego"
 	"github.com/wetee-dao/libos-entry/util"
 )
 
 func main() {
-	err := ego.InitLocalEgo()
+	// init ego
+	err := ego.InitEgo()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+
 	http.HandleFunc("/", indexHandler)
 	err = http.ListenAndServe(":8999", nil)
 	fmt.Println(err)
