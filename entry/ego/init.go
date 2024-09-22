@@ -19,13 +19,17 @@ import (
 	"github.com/wetee-dao/libos-entry/util"
 )
 
+var Fs *EgoFs
+
 func InitEgo() error {
 	hostfs := &EgoFs{}
+	Fs = hostfs
 	return libos.PreLoad(hostfs, false)
 }
 
 func InitLocalEgo() error {
 	hostfs := &EgoFs{}
+	Fs = hostfs
 	return libos.LocalLoad(hostfs, false)
 }
 
