@@ -2,3 +2,4 @@ bin
 **/libos-entry
 **.deb
 tests/main
+tests/ego-http-server/hello

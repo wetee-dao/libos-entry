@@ -1,4 +1,4 @@
-FROM registry.cn-hangzhou.aliyuncs.com/wetee_dao/ego-ubuntu-deploy:22.04
+FROM wetee/ego-ubuntu-deploy:22.04:22.04
 WORKDIR /
 
 ADD libos  /
