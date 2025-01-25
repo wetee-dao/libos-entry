@@ -39,5 +39,3 @@ require (
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 )
-
-// replace github.com/wetee-dao/go-sdk v1.0.0 => ../go-sdk
