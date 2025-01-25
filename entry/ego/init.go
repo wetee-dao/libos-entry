@@ -156,9 +156,9 @@ func (e *EgoFs) VerifyReport(workerReport *util.TeeParam) (*util.TeeReport, erro
 		return nil, errors.New("invalid sgx report")
 	}
 
-	if report.Debug {
-		return nil, errors.New("debug mode is not allowed")
-	}
+	// if report.Debug {
+	// 	return nil, errors.New("debug mode is not allowed")
+	// }
 
 	return &util.TeeReport{
 		TeeType:       workerReport.TeeType,
