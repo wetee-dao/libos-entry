@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/spf13/afero"
-	"github.com/wetee-dao/go-sdk/core"
+	chain "github.com/wetee-dao/go-sdk"
 )
 
 func TestSetKey(t *testing.T) {
@@ -48,7 +48,7 @@ func (l *MockFs) VerifyReport(reportData *TeeParam) (*TeeReport, error) {
 	return nil, nil
 }
 
-func (l *MockFs) IssueReport(pk *core.Signer, data []byte) (*TeeParam, error) {
+func (l *MockFs) IssueReport(pk *chain.Signer, data []byte) (*TeeParam, error) {
 	return &TeeParam{}, nil
 }
 

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/spf13/afero"
-	"github.com/wetee-dao/go-sdk/core"
+	chain "github.com/wetee-dao/go-sdk"
 	"github.com/wetee-dao/libos-entry/util"
 )
 
@@ -19,7 +19,7 @@ func TestStartEntryServer(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	deploySinger, err := core.Ed25519PairFromPk(deployKey, 42)
+	deploySinger, err := chain.Ed25519PairFromPk(deployKey, 42)
 	if err != nil {
 		t.Error(err)
 	}
@@ -50,7 +50,7 @@ func (l *MockFs) VerifyReport(workerReport *util.TeeParam) (*util.TeeReport, err
 	return nil, nil
 }
 
-func (l *MockFs) IssueReport(pk *core.Signer, data []byte) (*util.TeeParam, error) {
+func (l *MockFs) IssueReport(pk *chain.Signer, data []byte) (*util.TeeParam, error) {
 	return &util.TeeParam{}, nil
 }
 

@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/afero"
 	"golang.org/x/sys/unix"
 
-	"github.com/wetee-dao/go-sdk/core"
+	chain "github.com/wetee-dao/go-sdk"
 	"github.com/wetee-dao/libos-entry/libos"
 	"github.com/wetee-dao/libos-entry/util"
 )
@@ -75,7 +75,7 @@ func (l *LibosFs) VerifyReport(workerReport *util.TeeParam) (*util.TeeReport, er
 //
 //	*util.TeeParam：包含地址、时间、类型、数据和空报告字段的 TeeParam 对象指针
 //	error：如果发生错误，返回错误；如果成功，返回 nil
-func (l *LibosFs) IssueReport(pk *core.Signer, data []byte) (*util.TeeParam, error) {
+func (l *LibosFs) IssueReport(pk *chain.Signer, data []byte) (*util.TeeParam, error) {
 	timestamp := time.Now().Unix()
 	return &util.TeeParam{
 		Address: pk.Address,

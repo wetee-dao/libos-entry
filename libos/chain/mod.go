@@ -4,20 +4,19 @@ import (
 	"fmt"
 
 	chain "github.com/wetee-dao/go-sdk"
-	"github.com/wetee-dao/go-sdk/core"
 )
 
 // Chain
 type Chain struct {
 	*chain.ChainClient
-	signer *core.Signer
+	signer *chain.Signer
 }
 
 func (c *Chain) Close() {
 	c.Api.Client.Close()
 }
 
-func InitChain(url string, pk *core.Signer) (*Chain, error) {
+func InitChain(url string, pk *chain.Signer) (*Chain, error) {
 	client, err := chain.ClientInit(url, true)
 	if err != nil {
 		return nil, err

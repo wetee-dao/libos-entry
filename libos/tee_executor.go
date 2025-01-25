@@ -10,7 +10,7 @@ import (
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/go-resty/resty/v2"
-	"github.com/wetee-dao/go-sdk/core"
+	sdk "github.com/wetee-dao/go-sdk"
 	gtypes "github.com/wetee-dao/go-sdk/pallet/types"
 	"github.com/wetee-dao/libos-entry/libos/chain"
 	"github.com/wetee-dao/libos-entry/util"
@@ -18,7 +18,7 @@ import (
 
 type TeeExecutor struct {
 	chainAddr string
-	signer    *core.Signer
+	signer    *sdk.Signer
 	fs        util.Fs
 }
 

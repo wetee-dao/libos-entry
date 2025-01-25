@@ -38,8 +38,8 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 				AsU128Field0: types.NewU128(*big.NewInt(500)),
 			},
 			{
-				IsBool:       true,
-				AsBoolField0: true,
+				IsTBool:       true,
+				AsTBoolField0: true,
 			},
 			{
 				IsTString:       true,

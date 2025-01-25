@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/afero"
 	"github.com/vedhavyas/go-subkey/v2"
 	"github.com/vedhavyas/go-subkey/v2/ed25519"
-	"github.com/wetee-dao/go-sdk/core"
+	chain "github.com/wetee-dao/go-sdk"
 	"github.com/wetee-dao/libos-entry/libos"
 	"github.com/wetee-dao/libos-entry/util"
 )
@@ -79,7 +79,7 @@ func (e *EgoFs) Encrypt(val []byte) ([]byte, error) {
 	return ecrypto.SealWithProductKey(val, additionalData)
 }
 
-func (i *EgoFs) IssueReport(pk *core.Signer, data []byte) (*util.TeeParam, error) {
+func (i *EgoFs) IssueReport(pk *chain.Signer, data []byte) (*util.TeeParam, error) {
 	timestamp := time.Now().Unix()
 	if i.report != nil && i.lastReport+30 > timestamp {
 		return &util.TeeParam{

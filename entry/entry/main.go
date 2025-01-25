@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/afero"
 	"golang.org/x/sys/unix"
 
-	"github.com/wetee-dao/go-sdk/core"
+	chain "github.com/wetee-dao/go-sdk"
 	"github.com/wetee-dao/libos-entry/libos"
 	"github.com/wetee-dao/libos-entry/util"
 )
@@ -79,7 +79,7 @@ func (l *LibosFs) VerifyReport(workerReport *util.TeeParam) (*util.TeeReport, er
 	}, nil
 }
 
-func (l *LibosFs) IssueReport(pk *core.Signer, data []byte) (*util.TeeParam, error) {
+func (l *LibosFs) IssueReport(pk *chain.Signer, data []byte) (*util.TeeParam, error) {
 	switch l.LibOsType {
 	case "Gramine":
 		if l.gramine == nil {

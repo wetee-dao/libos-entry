@@ -6,15 +6,15 @@ import (
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
+	"github.com/wetee-dao/go-sdk/pallet/bridge"
 	gtypes "github.com/wetee-dao/go-sdk/pallet/types"
 	"github.com/wetee-dao/go-sdk/pallet/utility"
-	"github.com/wetee-dao/go-sdk/pallet/weteebridge"
 	"github.com/wetee-dao/libos-entry/util"
 )
 
 // list tee calls
 func (m *Chain) ListTeeCalls(cid uint64, callId []types.U128) ([]*gtypes.TEECall, []types.U128, []types.StorageKey, error) {
-	var pallet, method = "WeTEEBridge", "TEECalls"
+	var pallet, method = "Bridge", "TEECalls"
 	calls := make([]interface{}, 0, len(callId))
 	for _, id := range callId {
 		calls = append(calls, id)
@@ -44,7 +44,7 @@ func (m *Chain) ListTeeCalls(cid uint64, callId []types.U128) ([]*gtypes.TEECall
 }
 
 func (m *Chain) GetMetaApi(w gtypes.WorkId) (gtypes.ApiMeta, error) {
-	api, ok, err := weteebridge.GetApiMetasLatest(m.Api.RPC.State, w)
+	api, ok, err := bridge.GetApiMetasLatest(m.Api.RPC.State, w)
 	if err != nil {
 		return gtypes.ApiMeta{}, err
 	}
@@ -64,7 +64,7 @@ func (m *Chain) TeeCallback(cid uint64, callId []types.U128, callbacks []util.Te
 			isErr = true
 		}
 
-		call := weteebridge.MakeInkCallbackCall(cid, callId[i], cb.Args, types.NewU128(*big.NewInt(0)), gtypes.OptionTByteSlice{
+		call := bridge.MakeInkCallbackCall(cid, callId[i], cb.Args, types.NewU128(*big.NewInt(0)), gtypes.OptionTByteSlice{
 			IsSome:       isErr,
 			IsNone:       !isErr,
 			AsSomeField0: err,

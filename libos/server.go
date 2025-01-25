@@ -7,12 +7,12 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/wetee-dao/go-sdk/core"
+	chain "github.com/wetee-dao/go-sdk"
 	"github.com/wetee-dao/libos-entry/util"
 )
 
 // 创建一个专门用于为外接用于证明和获取证明的服务
-func startEntryServer(fs util.Fs, pk *core.Signer, chainAddr string) error {
+func startEntryServer(fs util.Fs, pk *chain.Signer, chainAddr string) error {
 	router := chi.NewRouter()
 	router.HandleFunc("/report", func(w http.ResponseWriter, r *http.Request) {
 		// 获取 TEE 证书

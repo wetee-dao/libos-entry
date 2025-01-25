@@ -10,7 +10,7 @@ require (
 	github.com/libp2p/go-libp2p v0.36.1
 	github.com/spf13/afero v1.11.0
 	github.com/vedhavyas/go-subkey/v2 v2.0.0
-	github.com/wetee-dao/go-sdk v0.1.1
+	github.com/wetee-dao/go-sdk v0.1.2-0.20250124054825-aa0db97641fe
 	golang.org/x/net v0.27.0 // indirect
 	golang.org/x/sys v0.22.0
 	google.golang.org/protobuf v1.34.2 // indirect

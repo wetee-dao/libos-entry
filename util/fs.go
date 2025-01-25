@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/spf13/afero"
-	"github.com/wetee-dao/go-sdk/core"
+	chain "github.com/wetee-dao/go-sdk"
 )
 
 type Fs interface {
@@ -14,5 +14,5 @@ type Fs interface {
 
 	// VerifyReport(reportBytes, data, signer []byte, t int64) (*attestation.Report, error)
 	VerifyReport(workerReport *TeeParam) (*TeeReport, error)
-	IssueReport(pk *core.Signer, data []byte) (*TeeParam, error)
+	IssueReport(pk *chain.Signer, data []byte) (*TeeParam, error)
 }
