@@ -16,5 +16,5 @@ ego-go build -o ./hello ./hello.go
 #     -v ${PWD}:/srv wetee/ego-ubuntu-builder:22.04 \
 #     bash -c "cd /srv && ego-go build -o ./hello ./hello.go"
 
-docker build -t registry.cn-hangzhou.aliyuncs.com/wetee_dao/ego-hello:$tag .
-docker push registry.cn-hangzhou.aliyuncs.com/wetee_dao/ego-hello:$tag
+docker build -t wetee/ego-hello:$tag .
+docker push wetee/ego-hello:$tag
