@@ -12,9 +12,8 @@ import (
 	"github.com/edgelesssys/ego/ecrypto"
 	"github.com/edgelesssys/ego/enclave"
 	"github.com/spf13/afero"
-	"github.com/vedhavyas/go-subkey/v2"
 	"github.com/vedhavyas/go-subkey/v2/ed25519"
-	chain "github.com/wetee-dao/go-sdk"
+	chain "github.com/wetee-dao/ink.go"
 	"github.com/wetee-dao/libos-entry/libos"
 	"github.com/wetee-dao/libos-entry/util"
 )
@@ -79,12 +78,13 @@ func (e *EgoFs) Encrypt(val []byte) ([]byte, error) {
 	return ecrypto.SealWithProductKey(val, additionalData)
 }
 
-func (i *EgoFs) IssueReport(pk *chain.Signer, data []byte) (*util.TeeParam, error) {
+// IssueReport implements libos.TeeFunction.
+func (i *EgoFs) IssueReport(pk chain.SignerType, data []byte) (*util.TeeParam, error) {
 	timestamp := time.Now().Unix()
 	if i.report != nil && i.lastReport+30 > timestamp {
 		return &util.TeeParam{
 			Time:    i.lastReport,
-			Address: pk.SS58Address(42),
+			Address: pk.Public(),
 			Report:  i.report,
 			Data:    data,
 		}, nil
@@ -92,7 +92,7 @@ func (i *EgoFs) IssueReport(pk *chain.Signer, data []byte) (*util.TeeParam, erro
 
 	var buf bytes.Buffer
 	buf.Write(util.Int64ToBytes(timestamp))
-	buf.Write(pk.PublicKey)
+	buf.Write(pk.Public())
 	if len(data) > 0 {
 		buf.Write(data)
 	}
@@ -111,26 +111,23 @@ func (i *EgoFs) IssueReport(pk *chain.Signer, data []byte) (*util.TeeParam, erro
 
 	return &util.TeeParam{
 		Time:    timestamp,
-		Address: pk.SS58Address(42),
+		Address: pk.Public(),
 		Report:  report,
 		Data:    data,
 	}, nil
 }
 
+// VerifyReport implements libos.TeeFunction.
 func (e *EgoFs) VerifyReport(workerReport *util.TeeParam) (*util.TeeReport, error) {
 	var reportBytes, msgBytes, timestamp = workerReport.Report, workerReport.Data, workerReport.Time
-
-	// decode address
-	_, signer, err := subkey.SS58Decode(workerReport.Address)
-	if err != nil {
-		return nil, errors.New("SS58 decode: " + err.Error())
-	}
+	signer := workerReport.Address
 
 	// 检查时间戳，超过 30s 签名过期
 	if timestamp+30 < time.Now().Unix() {
 		return nil, errors.New("report expired")
 	}
 
+	// 验证报告
 	report, err := enclave.VerifyRemoteReport(reportBytes)
 	if err == attestation.ErrTCBLevelInvalid {
 		fmt.Printf("Warning: TCB level is invalid: %v\n%v\n", report.TCBStatus, tcbstatus.Explain(report.TCBStatus))
@@ -138,6 +135,7 @@ func (e *EgoFs) VerifyReport(workerReport *util.TeeParam) (*util.TeeReport, erro
 		return nil, err
 	}
 
+	// 验证用户签名
 	pubkey, err := ed25519.Scheme{}.FromPublicKey(signer)
 	if err != nil {
 		return nil, err
@@ -150,9 +148,7 @@ func (e *EgoFs) VerifyReport(workerReport *util.TeeParam) (*util.TeeReport, erro
 		buf.Write(msgBytes)
 	}
 
-	sig := report.Data
-
-	if !pubkey.Verify(buf.Bytes(), sig) {
+	if !pubkey.Verify(buf.Bytes(), report.Data) {
 		return nil, errors.New("invalid sgx report")
 	}
 

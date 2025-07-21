@@ -44,7 +44,7 @@ func GetLibOS() (string, error) {
 	// return "NotTEE", errors.New("cannot get libOS")
 }
 
-func ExitWithMsg(format string, args ...interface{}) {
+func ExitWithMsg(format string, args ...any) {
 	// Print error message in red and append newline
 	// then exit with error code 1
 	msg := fmt.Sprintf("Error: %s\n", format)

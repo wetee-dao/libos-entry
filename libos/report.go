@@ -20,5 +20,6 @@ func CreateCertificate(appId string) ([]byte, crypto.PrivateKey) {
 	}
 	priv, _ := rsa.GenerateKey(rand.Reader, 2048)
 	cert, _ := x509.CreateCertificate(rand.Reader, template, template, &priv.PublicKey, priv)
+
 	return cert, priv
 }

@@ -13,7 +13,7 @@ import (
 	"os"
 	"time"
 
-	chain "github.com/wetee-dao/go-sdk"
+	chain "github.com/wetee-dao/ink.go"
 )
 
 // GramineQuoteIssuer issues quotes.
@@ -23,7 +23,7 @@ type GramineQuoteIssuer struct {
 }
 
 // Issue issues a quote for remote attestation for a given message (usually a certificate).
-func (i GramineQuoteIssuer) Issue(pk *chain.Signer, data []byte) ([]byte, int64, error) {
+func (i GramineQuoteIssuer) Issue(pk chain.SignerType, data []byte) ([]byte, int64, error) {
 	// hash := sha256.Sum256(cert)
 	timestamp := time.Now().Unix()
 	if i.report != nil && i.lastReport+30 > timestamp {
@@ -32,7 +32,7 @@ func (i GramineQuoteIssuer) Issue(pk *chain.Signer, data []byte) ([]byte, int64,
 
 	var buf bytes.Buffer
 	buf.Write(Int64ToBytes(timestamp))
-	buf.Write(pk.PublicKey)
+	buf.Write(pk.Public())
 	if len(data) > 0 {
 		buf.Write(data)
 	}

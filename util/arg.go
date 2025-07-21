@@ -6,19 +6,18 @@ import (
 	"fmt"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
-	"github.com/wetee-dao/go-sdk/pallet/types"
 )
 
 // 定义返回的数据结构
 type TeeCallBack struct {
-	Err  string         `json:"err"`
-	Args []types.InkArg `json:"args"`
+	Err  string   `json:"err"`
+	Args [][]byte `json:"args"`
 }
 
-type TeeCallBackJSON struct {
-	Err  string   `json:"err"`
-	Args []string `json:"args"`
-}
+// type TeeCallBackJSON struct {
+// 	Err  string   `json:"err"`
+// 	Args [][]byte `json:"args"`
+// }
 
 func (t *TeeCallBack) ToJSON() ([]byte, error) {
 	args := make([]string, 0, len(t.Args))
@@ -27,42 +26,19 @@ func (t *TeeCallBack) ToJSON() ([]byte, error) {
 		args = append(args, base64.StdEncoding.EncodeToString(bt))
 	}
 
-	data := TeeCallBackJSON{
-		Err:  t.Err,
-		Args: args,
-	}
-
-	return json.Marshal(data)
+	return json.Marshal(t)
 }
 
 func UnmarshalToArgs(bt []byte) *TeeCallBack {
 	// 解析 JSON 数据
-	var data TeeCallBackJSON
+	var data TeeCallBack
 	err := json.Unmarshal(bt, &data)
 	if err != nil {
 		fmt.Println("Unmarshal error:", err)
 		return nil
 	}
 
-	// 遍历解析后的数组
-	args := make([]types.InkArg, 0, len(data.Args))
-	for _, str := range data.Args {
-		var arg types.InkArg
-		argStr, err := base64.StdEncoding.DecodeString(str)
-		if err != nil {
-			return nil
-		}
-		err = codec.Decode(argStr, &arg)
-		if err != nil {
-			return nil
-		}
-		args = append(args, arg)
-	}
-
-	return &TeeCallBack{
-		Err:  data.Err,
-		Args: args,
-	}
+	return &data
 }
 
 // func transferArgs(args []map[string]interface{}) []types.InkArg {

@@ -8,7 +8,8 @@ import (
 	"github.com/spf13/afero"
 	"golang.org/x/sys/unix"
 
-	chain "github.com/wetee-dao/go-sdk"
+	chain "github.com/wetee-dao/ink.go"
+	inkutil "github.com/wetee-dao/ink.go/util"
 	"github.com/wetee-dao/libos-entry/libos"
 	"github.com/wetee-dao/libos-entry/util"
 )
@@ -33,7 +34,7 @@ func main() {
 
 	// Start service
 	// 开启服务
-	util.LogWithRed("Starting service ", strings.Join(os.Args, " "))
+	inkutil.LogWithGray("Starting service ", strings.Join(os.Args, " "))
 	if err := unix.Exec(service, os.Args, os.Environ()); err != nil {
 		util.ExitWithMsg("Starting service error", err.Error())
 	}
@@ -75,10 +76,10 @@ func (l *LibosFs) VerifyReport(workerReport *util.TeeParam) (*util.TeeReport, er
 //
 //	*util.TeeParam：包含地址、时间、类型、数据和空报告字段的 TeeParam 对象指针
 //	error：如果发生错误，返回错误；如果成功，返回 nil
-func (l *LibosFs) IssueReport(pk *chain.Signer, data []byte) (*util.TeeParam, error) {
+func (l *LibosFs) IssueReport(pk chain.SignerType, data []byte) (*util.TeeParam, error) {
 	timestamp := time.Now().Unix()
 	return &util.TeeParam{
-		Address: pk.Address,
+		Address: pk.Public(),
 		Time:    timestamp,
 		TeeType: 1,
 		Data:    data,

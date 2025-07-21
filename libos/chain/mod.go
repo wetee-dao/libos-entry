@@ -1,9 +1,8 @@
 package chain
 
 import (
-	"fmt"
-
-	chain "github.com/wetee-dao/go-sdk"
+	chain "github.com/wetee-dao/ink.go"
+	"github.com/wetee-dao/ink.go/util"
 )
 
 // Chain
@@ -22,7 +21,7 @@ func InitChain(url string, pk *chain.Signer) (*Chain, error) {
 		return nil, err
 	}
 
-	fmt.Println("Node chain pubkey:", pk.Address)
+	util.LogWithBlue("POD PUBKEY", pk.Address)
 
 	return &Chain{
 		ChainClient: client,

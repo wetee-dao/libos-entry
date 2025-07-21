@@ -2,10 +2,10 @@ package util
 
 import (
 	"crypto/ed25519"
+	"crypto/rand"
 	"io"
 
-	libp2pCrypto "github.com/libp2p/go-libp2p/core/crypto"
-	chain "github.com/wetee-dao/go-sdk"
+	chain "github.com/wetee-dao/ink.go"
 )
 
 // 去中心化的机密注入
@@ -14,22 +14,16 @@ type Secrets struct {
 	Files map[string][]byte
 }
 
-func GenerateKeyPair(src io.Reader) (*chain.Signer, error) {
-	sk, _, err := libp2pCrypto.GenerateKeyPairWithReader(libp2pCrypto.Ed25519, 0, src)
+func GenerateKeyPair(src io.Reader) (*chain.Signer, ed25519.PrivateKey, ed25519.PublicKey, error) {
+	pubKey, privKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
-	bt, err := sk.Raw()
+	kr, err := chain.Ed25519PairFromPk(privKey, 42)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
-	var ed25519Key ed25519.PrivateKey = bt
-	kr, err := chain.Ed25519PairFromPk(ed25519Key, 42)
-	if err != nil {
-		return nil, err
-	}
-
-	return &kr, nil
+	return &kr, privKey, pubKey, nil
 }

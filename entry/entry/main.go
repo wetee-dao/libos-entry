@@ -9,7 +9,8 @@ import (
 	"github.com/spf13/afero"
 	"golang.org/x/sys/unix"
 
-	chain "github.com/wetee-dao/go-sdk"
+	chain "github.com/wetee-dao/ink.go"
+	inkutil "github.com/wetee-dao/ink.go/util"
 	"github.com/wetee-dao/libos-entry/libos"
 	"github.com/wetee-dao/libos-entry/util"
 )
@@ -40,7 +41,7 @@ func main() {
 
 	// Start service
 	// 开启服务
-	util.LogWithRed("Starting service ", strings.Join(os.Args, " "))
+	inkutil.LogWithGray("Starting service ", strings.Join(os.Args, " "))
 	if err := unix.Exec(service, os.Args, os.Environ()); err != nil {
 		util.ExitWithMsg("Starting service error", err.Error())
 	}
@@ -79,7 +80,7 @@ func (l *LibosFs) VerifyReport(workerReport *util.TeeParam) (*util.TeeReport, er
 	}, nil
 }
 
-func (l *LibosFs) IssueReport(pk *chain.Signer, data []byte) (*util.TeeParam, error) {
+func (l *LibosFs) IssueReport(pk chain.SignerType, data []byte) (*util.TeeParam, error) {
 	switch l.LibOsType {
 	case "Gramine":
 		if l.gramine == nil {
@@ -90,10 +91,10 @@ func (l *LibosFs) IssueReport(pk *chain.Signer, data []byte) (*util.TeeParam, er
 			return nil, err
 		}
 		return &util.TeeParam{
-			Time:    t,
-			Address: pk.SS58Address(42),
-			Report:  report,
-			Data:    data,
+			Time: t,
+			// Address: pk.SS58Address(42),
+			Report: report,
+			Data:   data,
 		}, nil
 	default:
 		return nil, errors.New("invalid libos")

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/spf13/afero"
-	chain "github.com/wetee-dao/go-sdk"
+	chain "github.com/wetee-dao/ink.go"
 	"github.com/wetee-dao/libos-entry/util"
 )
 
@@ -24,7 +24,7 @@ func TestStartEntryServer(t *testing.T) {
 		t.Error(err)
 	}
 
-	go startEntryServer(fs, &deploySinger, "")
+	go startTEEServer(fs, &deploySinger, "")
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "https://0.0.0.0:8888/report", nil)
@@ -50,7 +50,7 @@ func (l *MockFs) VerifyReport(workerReport *util.TeeParam) (*util.TeeReport, err
 	return nil, nil
 }
 
-func (l *MockFs) IssueReport(pk *chain.Signer, data []byte) (*util.TeeParam, error) {
+func (l *MockFs) IssueReport(pk chain.SignerType, data []byte) (*util.TeeParam, error) {
 	return &util.TeeParam{}, nil
 }
 

@@ -5,7 +5,7 @@ import "encoding/binary"
 // 请求开始TEE容器
 type TeeParam struct {
 	// sign address
-	Address string
+	Address []byte
 	// report time
 	Time int64
 	// 0: sgx, 1: sev 2: tdx 3: sev-snp

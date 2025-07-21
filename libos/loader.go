@@ -5,25 +5,56 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"net"
 
+	inkutil "github.com/wetee-dao/ink.go/util"
 	"github.com/wetee-dao/libos-entry/libos/chain"
 	"github.com/wetee-dao/libos-entry/util"
 )
 
 var DefaultChainUrl string = "ws://wetee-node.worker-addon.svc.cluster.local:9944"
+var DefaultWorkAddr string = "https://wetee-worker.worker-system.svc.cluster.local:8883"
 
 func PreLoad(fs util.Fs, isMain bool) error {
+	// 读取环境变量
 	AppID := util.GetEnv("APPID", "NONE")
-
-	// 获取集群中的worker地址
-	workerAddr := util.GetEnv("WORKER_ADDR", "https://wetee-worker.worker-system.svc.cluster.local:8883")
+	workerAddr := util.GetEnv("WORKER_ADDR", DefaultWorkAddr)
 	chainAddr := util.GetEnv("CHAIN_ADDR", DefaultChainUrl)
 
-	util.LogWithRed("WorkerAddr", workerAddr)
+	inkutil.LogWithGray("WorkerAddr", workerAddr)
+
+	// 生成 本次部署 Key
+	deploySinger, priv, pub, err := util.GenerateKeyPair(rand.Reader)
+	if err != nil {
+		return errors.New("GenerateKeyPair: " + err.Error())
+	}
+
+	// 以 ed25519 密钥对生成TLS证书
+	_, _, serverCertDER, err := util.Ed25519Cert(
+		"localhost",
+		[]net.IP{net.ParseIP("127.0.0.1")},
+		[]string{"localhost"},
+		priv,
+		pub,
+	)
+	if err != nil {
+		return errors.New("Ed25519Cert: " + err.Error())
+	}
+
+	// Golang tls.config
+	serverCert := tls.Certificate{Certificate: [][]byte{serverCertDER}, PrivateKey: priv}
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{serverCert},
+		MinVersion:   tls.VersionTLS13,
+
+		// skip client verification
+		InsecureSkipVerify: true,
+		ClientAuth:         tls.RequireAnyClientCert,
+	}
 
 	// 验证远程worker是否可用
 	// Initializes the confidential injection
-	wChanel := WorkerChannel{TlsConfig: &tls.Config{InsecureSkipVerify: true}}
+	wChanel := WorkerChannel{TlsConfig: tlsConfig}
 	workerReportWrap, err := wChanel.Get(workerAddr + "/report")
 	if err != nil {
 		return errors.New("GetFromWorker report: " + err.Error())
@@ -35,12 +66,6 @@ func PreLoad(fs util.Fs, isMain bool) error {
 	err = json.Unmarshal(workerReportWrap, &workerReport)
 	if err != nil {
 		return errors.New("Unmarshal worker report: " + err.Error())
-	}
-
-	// 生成 本次部署 Key
-	deploySinger, err := util.GenerateKeyPair(rand.Reader)
-	if err != nil {
-		return errors.New("GenerateKeyPair: " + err.Error())
 	}
 
 	// 初始化区块链链接
@@ -89,9 +114,9 @@ func PreLoad(fs util.Fs, isMain bool) error {
 	}
 
 	if isMain {
-		startEntryServer(fs, deploySinger, chainAddr)
+		startTEEServer(fs, deploySinger, chainAddr)
 	} else {
-		go startEntryServer(fs, deploySinger, chainAddr)
+		go startTEEServer(fs, deploySinger, chainAddr)
 	}
 
 	return nil
@@ -99,15 +124,15 @@ func PreLoad(fs util.Fs, isMain bool) error {
 
 func LocalLoad(fs util.Fs, isMain bool) error {
 	// 生成 本次部署 Key
-	deploySinger, err := util.GenerateKeyPair(rand.Reader)
+	deploySinger, _, _, err := util.GenerateKeyPair(rand.Reader)
 	if err != nil {
 		return errors.New("GenerateKeyPair: " + err.Error())
 	}
 
 	if isMain {
-		startEntryServer(fs, deploySinger, "")
+		startTEEServer(fs, deploySinger, "")
 	} else {
-		go startEntryServer(fs, deploySinger, "")
+		go startTEEServer(fs, deploySinger, "")
 	}
 
 	return nil

@@ -2,17 +2,17 @@ package libos
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 
-	chain "github.com/wetee-dao/go-sdk"
+	chain "github.com/wetee-dao/ink.go"
+	inkutil "github.com/wetee-dao/ink.go/util"
 	"github.com/wetee-dao/libos-entry/util"
 )
 
 // 创建一个专门用于为外接用于证明和获取证明的服务
-func startEntryServer(fs util.Fs, pk *chain.Signer, chainAddr string) error {
+func startTEEServer(fs util.Fs, pk chain.SignerType, chainAddr string) error {
 	router := chi.NewRouter()
 	router.HandleFunc("/report", func(w http.ResponseWriter, r *http.Request) {
 		// 获取 TEE 证书
@@ -29,16 +29,16 @@ func startEntryServer(fs util.Fs, pk *chain.Signer, chainAddr string) error {
 	})
 
 	if chainAddr != "" {
-		teeExecutor := &TeeExecutor{
-			chainAddr: chainAddr,
-			signer:    pk,
-			fs:        fs,
-		}
-		router.HandleFunc("/tee-call", teeExecutor.HandleTeeCall)
+		// teeExecutor := &TeeExecutor{
+		// 	chainAddr: chainAddr,
+		// 	signer:    pk,
+		// 	fs:        fs,
+		// }
+		// router.HandleFunc("/tee-call", teeExecutor.HandleTeeCall)
 	}
 
 	server := &http.Server{Addr: ":65535", Handler: router}
-	fmt.Println("Start entry secret listening http://0.0.0.0:65535 ...")
+	inkutil.LogWithGreen("TEE server", "http://0.0.0.0:65535")
 	err := server.ListenAndServe()
 	return err
 }
