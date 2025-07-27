@@ -2,13 +2,14 @@ package libos
 
 import (
 	chain "github.com/wetee-dao/ink.go"
+	"github.com/wetee-dao/libos-entry/model"
 	"github.com/wetee-dao/libos-entry/util"
 )
 
 // VerifyWorker 函数验证工人报告并返回签名者或错误
-func VerifyWorker(reportData *util.TeeParam, fs util.Fs, client *chain.ChainClient) ([]byte, error) {
+func VerifyWorker(reportData *model.TeeCall, fs util.Fs, client *chain.ChainClient) ([]byte, error) {
 	// 解码地址
-	signer := reportData.Address
+	signer := reportData.Caller
 
 	// report, err := fs.VerifyReport(reportData)
 	// if err != nil {

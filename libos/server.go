@@ -1,7 +1,6 @@
 package libos
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -16,12 +15,13 @@ func startTEEServer(fs util.Fs, pk chain.SignerType, chainAddr string) error {
 	router := chi.NewRouter()
 	router.HandleFunc("/report", func(w http.ResponseWriter, r *http.Request) {
 		// 获取 TEE 证书
-		param, err := fs.IssueReport(pk, nil)
-		if err != nil {
-			w.WriteHeader(500)
-			w.Write([]byte(err.Error()))
-		}
-		bt, _ := json.Marshal(param)
+		// param, err := fs.IssueReport(pk, nil)
+		// if err != nil {
+		// 	w.WriteHeader(500)
+		// 	w.Write([]byte(err.Error()))
+		// }
+		// bt, _ := json.Marshal(param)
+		bt := []byte("123")
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)

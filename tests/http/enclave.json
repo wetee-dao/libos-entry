@@ -1,7 +1,7 @@
 {
  "exe": "hello",
  "key": "keys/private.pem",
- "debug": false,
+ "debug": true,
  "heapSize": 500,
  "executableHeap": false,
  "productID": 1,

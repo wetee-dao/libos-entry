@@ -10,7 +10,7 @@ import (
 
 	"github.com/spf13/afero"
 	chain "github.com/wetee-dao/ink.go"
-	"github.com/wetee-dao/libos-entry/util"
+	"github.com/wetee-dao/libos-entry/model"
 )
 
 func TestStartEntryServer(t *testing.T) {
@@ -46,12 +46,12 @@ func (f *MockFs) WriteFile(filename string, data []byte, perm os.FileMode) error
 	return afero.WriteFile(f, filename, data, perm)
 }
 
-func (l *MockFs) VerifyReport(workerReport *util.TeeParam) (*util.TeeReport, error) {
+func (l *MockFs) VerifyReport(workerReport *model.TeeCall) (*model.TeeVerifyResult, error) {
 	return nil, nil
 }
 
-func (l *MockFs) IssueReport(pk chain.SignerType, data []byte) (*util.TeeParam, error) {
-	return &util.TeeParam{}, nil
+func (l *MockFs) IssueReport(pk chain.Signer, data *model.TeeCall) error {
+	return nil
 }
 
 func (l *MockFs) SetPassword(password string) {

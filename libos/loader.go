@@ -1,23 +1,29 @@
 package libos
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"net"
+	"time"
 
+	"github.com/cometbft/cometbft/abci/types"
 	inkutil "github.com/wetee-dao/ink.go/util"
 	"github.com/wetee-dao/libos-entry/libos/chain"
+	"github.com/wetee-dao/libos-entry/model"
+	"github.com/wetee-dao/libos-entry/model/protoio"
 	"github.com/wetee-dao/libos-entry/util"
 )
 
-var DefaultChainUrl string = "ws://wetee-node.worker-addon.svc.cluster.local:9944"
+var DefaultChainUrl string = "ws://192.168.111.105:9944"
 var DefaultWorkAddr string = "https://wetee-worker.worker-system.svc.cluster.local:8883"
 
 func PreLoad(fs util.Fs, isMain bool) error {
 	// 读取环境变量
 	AppID := util.GetEnv("APPID", "NONE")
+	PodID := util.GetEnvU64("PODID", 0)
 	workerAddr := util.GetEnv("WORKER_ADDR", DefaultWorkAddr)
 	chainAddr := util.GetEnv("CHAIN_ADDR", DefaultChainUrl)
 
@@ -55,17 +61,17 @@ func PreLoad(fs util.Fs, isMain bool) error {
 	// 验证远程worker是否可用
 	// Initializes the confidential injection
 	wChanel := WorkerChannel{TlsConfig: tlsConfig}
-	workerReportWrap, err := wChanel.Get(workerAddr + "/report")
+	workerReportBt, err := wChanel.Get(workerAddr + "/report")
 	if err != nil {
 		return errors.New("GetFromWorker report: " + err.Error())
 	}
 
 	// 解析远程worker的证书
 	// Parse the worker certificate
-	workerReport := util.TeeParam{}
-	err = json.Unmarshal(workerReportWrap, &workerReport)
+	workerReport := new(model.TeeCall)
+	err = protoio.ReadMessage(bytes.NewBuffer(workerReportBt), workerReport)
 	if err != nil {
-		return errors.New("Unmarshal worker report: " + err.Error())
+		return errors.New("Read Report Message: " + err.Error())
 	}
 
 	// 初始化区块链链接
@@ -74,7 +80,7 @@ func PreLoad(fs util.Fs, isMain bool) error {
 		c.Close()
 		return errors.New("chain.InitChain: " + err.Error())
 	}
-	_, err = VerifyWorker(&workerReport, fs, c.ChainClient)
+	_, err = fs.VerifyReport(workerReport)
 	if err != nil {
 		c.Close()
 		return errors.New("VerifyReport: " + err.Error())
@@ -85,15 +91,27 @@ func PreLoad(fs util.Fs, isMain bool) error {
 	// Get local certificate
 	// 构建签名证明自己在集群中的身份
 	// Build the signature to prove your identity in the cluster
-	param, err := fs.IssueReport(deploySinger, nil)
+	podMint := &model.TeeCall{
+		Time: time.Now().Unix(),
+		Tx: &model.TeeCall_PodStart{
+			PodStart: &model.PodStart{
+				Id: uint64(PodID),
+			},
+		},
+	}
+	err = fs.IssueReport(*deploySinger, podMint)
 	if err != nil {
 		return errors.New("GetRemoteReport: " + err.Error())
 	}
-	pbt, _ := json.Marshal(param)
+	buf := new(bytes.Buffer)
+	err = types.WriteMessage(podMint, buf)
+	if err != nil {
+		return errors.New("WriteMessage: " + err.Error())
+	}
 
 	// 向集群请求机密
 	// Request confidential
-	bt, err := wChanel.Post(workerAddr+"/appLaunch/"+AppID, string(pbt))
+	bt, err := wChanel.PostBt(workerAddr+"/appLaunch/"+AppID, buf.Bytes())
 	if err != nil {
 		return errors.New("WorkerPost: " + err.Error())
 	}
@@ -117,22 +135,6 @@ func PreLoad(fs util.Fs, isMain bool) error {
 		startTEEServer(fs, deploySinger, chainAddr)
 	} else {
 		go startTEEServer(fs, deploySinger, chainAddr)
-	}
-
-	return nil
-}
-
-func LocalLoad(fs util.Fs, isMain bool) error {
-	// 生成 本次部署 Key
-	deploySinger, _, _, err := util.GenerateKeyPair(rand.Reader)
-	if err != nil {
-		return errors.New("GenerateKeyPair: " + err.Error())
-	}
-
-	if isMain {
-		startTEEServer(fs, deploySinger, "")
-	} else {
-		go startTEEServer(fs, deploySinger, "")
 	}
 
 	return nil

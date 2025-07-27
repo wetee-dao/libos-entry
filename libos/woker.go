@@ -1,6 +1,7 @@
 package libos
 
 import (
+	"bytes"
 	"crypto/tls"
 	"errors"
 	"io"
@@ -40,6 +41,25 @@ func (w *WorkerChannel) Post(url string, json string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
+	bt, err := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(string(bt))
+	}
+
+	return bt, err
+}
+
+func (w *WorkerChannel) PostBt(url string, data []byte) ([]byte, error) {
+	client := http.Client{Transport: &http.Transport{TLSClientConfig: w.TlsConfig}, Timeout: time.Minute}
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(data))
+	req.Header.Set("Content-Type", "application/x-protobuf")
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
 	defer resp.Body.Close()
 	bt, err := io.ReadAll(resp.Body)
 

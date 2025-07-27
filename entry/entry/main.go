@@ -12,6 +12,7 @@ import (
 	chain "github.com/wetee-dao/ink.go"
 	inkutil "github.com/wetee-dao/ink.go/util"
 	"github.com/wetee-dao/libos-entry/libos"
+	"github.com/wetee-dao/libos-entry/model"
 	"github.com/wetee-dao/libos-entry/util"
 )
 
@@ -63,7 +64,7 @@ func (f *LibosFs) WriteFile(filename string, data []byte, perm os.FileMode) erro
 	return afero.WriteFile(f, filename, data, perm)
 }
 
-func (l *LibosFs) VerifyReport(workerReport *util.TeeParam) (*util.TeeReport, error) {
+func (l *LibosFs) VerifyReport(workerReport *model.TeeCall) (*model.TeeVerifyResult, error) {
 	// report, err := eclient.VerifyRemoteReport(reportBytes)
 	// if err == attestation.ErrTCBLevelInvalid {
 	// 	fmt.Printf("Warning: TCB level is invalid: %v\n%v\n", report.TCBStatus, tcbstatus.Explain(report.TCBStatus))
@@ -72,31 +73,23 @@ func (l *LibosFs) VerifyReport(workerReport *util.TeeParam) (*util.TeeReport, er
 	// 	return err
 	// }
 
-	return &util.TeeReport{
+	return &model.TeeVerifyResult{
 		TeeType:       workerReport.TeeType,
 		CodeSigner:    []byte{},
 		CodeSignature: []byte{},
-		CodeProductID: []byte{},
+		CodeProductId: []byte{},
 	}, nil
 }
 
-func (l *LibosFs) IssueReport(pk chain.SignerType, data []byte) (*util.TeeParam, error) {
+func (l *LibosFs) IssueReport(pk chain.Signer, call *model.TeeCall) error {
 	switch l.LibOsType {
 	case "Gramine":
 		if l.gramine == nil {
 			l.gramine = &util.GramineQuoteIssuer{}
 		}
-		report, t, err := l.gramine.Issue(pk, data)
-		if err != nil {
-			return nil, err
-		}
-		return &util.TeeParam{
-			Time: t,
-			// Address: pk.SS58Address(42),
-			Report: report,
-			Data:   data,
-		}, nil
+
+		return l.gramine.Issue(pk, call)
 	default:
-		return nil, errors.New("invalid libos")
+		return errors.New("invalid libos")
 	}
 }

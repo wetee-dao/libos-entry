@@ -11,6 +11,7 @@ import (
 	chain "github.com/wetee-dao/ink.go"
 	inkutil "github.com/wetee-dao/ink.go/util"
 	"github.com/wetee-dao/libos-entry/libos"
+	"github.com/wetee-dao/libos-entry/model"
 	"github.com/wetee-dao/libos-entry/util"
 )
 
@@ -57,12 +58,12 @@ func (f *LibosFs) WriteFile(filename string, data []byte, perm os.FileMode) erro
 
 // VerifyReport 函数接收一个 *util.TeeParam 类型指针 workerReport
 // 并返回一个 *util.TeeReport 类型的指针和一个空的错误
-func (l *LibosFs) VerifyReport(workerReport *util.TeeParam) (*util.TeeReport, error) {
-	return &util.TeeReport{
+func (l *LibosFs) VerifyReport(workerReport *model.TeeCall) (*model.TeeVerifyResult, error) {
+	return &model.TeeVerifyResult{
 		TeeType:       workerReport.TeeType,
 		CodeSigner:    []byte{},
 		CodeSignature: []byte{},
-		CodeProductID: []byte{},
+		CodeProductId: []byte{},
 	}, nil
 }
 
@@ -76,13 +77,8 @@ func (l *LibosFs) VerifyReport(workerReport *util.TeeParam) (*util.TeeReport, er
 //
 //	*util.TeeParam：包含地址、时间、类型、数据和空报告字段的 TeeParam 对象指针
 //	error：如果发生错误，返回错误；如果成功，返回 nil
-func (l *LibosFs) IssueReport(pk chain.SignerType, data []byte) (*util.TeeParam, error) {
+func (l *LibosFs) IssueReport(pk chain.Signer, call *model.TeeCall) error {
 	timestamp := time.Now().Unix()
-	return &util.TeeParam{
-		Address: pk.Public(),
-		Time:    timestamp,
-		TeeType: 1,
-		Data:    data,
-		Report:  []byte{},
-	}, nil
+	call.Time = timestamp
+	return nil
 }

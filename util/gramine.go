@@ -14,61 +14,67 @@ import (
 	"time"
 
 	chain "github.com/wetee-dao/ink.go"
+	"github.com/wetee-dao/libos-entry/model"
 )
 
 // GramineQuoteIssuer issues quotes.
-type GramineQuoteIssuer struct {
-	report     []byte
-	lastReport int64
-}
+type GramineQuoteIssuer struct{}
 
 // Issue issues a quote for remote attestation for a given message (usually a certificate).
-func (i GramineQuoteIssuer) Issue(pk chain.SignerType, data []byte) ([]byte, int64, error) {
+func (i GramineQuoteIssuer) Issue(pk chain.Signer, call *model.TeeCall) error {
 	// hash := sha256.Sum256(cert)
 	timestamp := time.Now().Unix()
-	if i.report != nil && i.lastReport+30 > timestamp {
-		return i.report, i.lastReport, nil
-	}
 
 	var buf bytes.Buffer
 	buf.Write(Int64ToBytes(timestamp))
-	buf.Write(pk.Public())
-	if len(data) > 0 {
-		buf.Write(data)
+	buf.Write(pk.PublicKey)
+	if call.Tx != nil {
+		txbuf := make([]byte, call.Tx.Size())
+		call.Tx.MarshalTo(txbuf)
+		buf.Write(txbuf)
 	}
+
 	sig, err := pk.Sign(buf.Bytes())
 	if err != nil {
-		return nil, 0, err
+		return err
 	}
 
 	f, err := os.OpenFile("/dev/attestation/user_report_data", os.O_WRONLY, 0)
 	if err != nil {
-		return nil, 0, err
+		return err
 	}
 
 	_, err = f.Write(sig)
 	f.Close()
 	if err != nil {
-		return nil, 0, err
+		return err
 	}
 
 	f, err = os.Open("/dev/attestation/quote")
 	if err != nil {
-		return nil, 0, err
+		return err
 	}
 
 	quote := make([]byte, 8192)
 	quoteSize, err := f.Read(quote)
 	f.Close()
 	if err != nil {
-		return nil, 0, err
+		return err
 	}
 
 	if !(0 < quoteSize && quoteSize < len(quote)) {
-		return nil, 0, errors.New("invalid quote size")
+		return errors.New("invalid quote size")
 	}
 
-	return prependOEHeaderToRawQuote(quote[:quoteSize]), 0, nil
+	report := prependOEHeaderToRawQuote(quote[:quoteSize])
+
+	// add report to call
+	call.Time = timestamp
+	call.TeeType = 0
+	call.Report = report
+	call.Caller = pk.PublicKey
+
+	return nil
 }
 
 func prependOEHeaderToRawQuote(rawQuote []byte) []byte {
