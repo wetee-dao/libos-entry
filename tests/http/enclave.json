@@ -12,6 +12,22 @@
         "fromHost": true
     },
     {
+        "name": "PODID",
+        "fromHost": true
+    },
+    {
+        "name": "__FILES__",
+        "fromHost": true
+    },
+    {
+        "name": "__ENCRYPTS__",
+        "fromHost": true
+    },
+    {
+        "name": "NAME_SPACE",
+        "fromHost": true
+    },
+    {
         "name": "WORKER_ADDR",
         "fromHost": true
     },
