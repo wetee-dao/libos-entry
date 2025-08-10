@@ -3,11 +3,9 @@ package libos
 import (
 	"bytes"
 	"crypto/rand"
-	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"net"
 	"time"
 
 	"github.com/cometbft/cometbft/abci/types"
@@ -21,7 +19,7 @@ import (
 )
 
 var DefaultChainUrl string = "ws://192.168.111.105:9944"
-var DefaultWorkAddr string = "https://wetee-worker.worker-system.svc.cluster.local:8883"
+var DefaultWorkAddr string = "wetee-worker.worker-system.svc.cluster.local:8883"
 
 func PreLoad(fs util.Fs, isMain bool) error {
 	// 读取环境变量
@@ -36,42 +34,48 @@ func PreLoad(fs util.Fs, isMain bool) error {
 	inkutil.LogWithGray("WorkerAddr", workerAddr)
 
 	// 生成 本次部署 Key
-	deploySinger, priv, pub, err := util.GenerateKeyPair(rand.Reader)
+	deploySinger, priv, _, err := util.GenerateKeyPair(rand.Reader)
 	if err != nil {
 		return errors.New("GenerateKeyPair: " + err.Error())
 	}
 
-	// 以 ed25519 密钥对生成TLS证书
-	_, _, serverCertDER, err := util.Ed25519Cert(
-		"localhost",
-		[]net.IP{net.ParseIP("127.0.0.1")},
-		[]string{"localhost"},
-		priv,
-		pub,
-	)
+	wChanel, workerReportBt, err := NewTEEClient(workerAddr)
 	if err != nil {
-		return errors.New("Ed25519Cert: " + err.Error())
+		return errors.New("NewNewClient: " + err.Error())
 	}
+
+	go wChanel.Start()
+
+	// 以 ed25519 密钥对生成TLS证书
+	// _, _, serverCertDER, err := util.Ed25519Cert(
+	// 	"localhost",
+	// 	[]net.IP{net.ParseIP("127.0.0.1")},
+	// 	[]string{"localhost"},
+	// 	priv,
+	// 	pub,
+	// )
+	// if err != nil {
+	// 	return errors.New("Ed25519Cert: " + err.Error())
+	// }
 
 	// 获取本地证书
 	// Get local certificate
-	serverCert := tls.Certificate{Certificate: [][]byte{serverCertDER}, PrivateKey: priv}
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{serverCert},
-		MinVersion:   tls.VersionTLS13,
+	// serverCert := tls.Certificate{Certificate: [][]byte{serverCertDER}, PrivateKey: priv}
+	// tlsConfig := &tls.Config{
+	// 	Certificates: []tls.Certificate{serverCert},
+	// 	MinVersion:   tls.VersionTLS13,
 
-		// skip client verification
-		InsecureSkipVerify: true,
-		ClientAuth:         tls.RequireAnyClientCert,
-	}
+	// 	// skip client verification
+	// 	InsecureSkipVerify: true,
+	// 	ClientAuth:         tls.RequireAnyClientCert,
+	// }
 
 	// 验证远程worker是否可用
 	// Initializes the confidential injection
-	wChanel := WorkerChannel{TlsConfig: tlsConfig}
-	workerReportBt, err := wChanel.Get(workerAddr + "/report")
-	if err != nil {
-		return errors.New("GetFromWorker report: " + err.Error())
-	}
+	// workerReportBt, err := wChanel.Get("/report")
+	// if err != nil {
+	// 	return errors.New("GetFromWorker report: " + err.Error())
+	// }
 
 	// 解析远程worker的证书
 	// Parse the worker certificate
@@ -87,6 +91,9 @@ func PreLoad(fs util.Fs, isMain bool) error {
 		c.Close()
 		return errors.New("chain.InitChain: " + err.Error())
 	}
+
+	// 验证远程worker的证书
+	// Verify the worker tee report
 	_, err = fs.VerifyReport(workerReport)
 	if err != nil {
 		c.Close()
@@ -114,6 +121,7 @@ func PreLoad(fs util.Fs, isMain bool) error {
 		Tx: &model.TeeCall_PodStart{
 			PodStart: &model.PodStart{
 				Id:        uint64(PodID),
+				AppId:     []byte(AppID),
 				NameSpace: ns,
 				PubKey:    deploySinger.Public(),
 				Indexs:    ids,
@@ -121,11 +129,13 @@ func PreLoad(fs util.Fs, isMain bool) error {
 		},
 	}
 
+	// issue report of TEE CALL
 	err = fs.IssueReport(*deploySinger, podMint)
 	if err != nil {
 		return errors.New("GetRemoteReport: " + err.Error())
 	}
 
+	// encode msg
 	buf := new(bytes.Buffer)
 	err = types.WriteMessage(podMint, buf)
 	if err != nil {
@@ -134,9 +144,9 @@ func PreLoad(fs util.Fs, isMain bool) error {
 
 	// 向集群请求机密
 	// Request confidential
-	bt, err := wChanel.PostBt(workerAddr+"/launch/"+AppID, buf.Bytes())
+	bt, err := wChanel.Invoke("/launch", buf.Bytes())
 	if err != nil {
-		return errors.New("WorkerPost: " + err.Error())
+		return errors.New("Launch: " + err.Error())
 	}
 
 	// 解析机密数据

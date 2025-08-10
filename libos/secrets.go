@@ -10,6 +10,7 @@ import (
 
 func applySecrets(s *util.Secrets, fs util.Fs) error {
 	const keyPrePath = "/dev/attestation/keys/"
+
 	// 先写入其他的加密文件需要的解密钥匙
 	// Write encrypted key file for other
 	for keyPath, data := range s.Files {
