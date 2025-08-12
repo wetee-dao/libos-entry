@@ -13,11 +13,10 @@ import (
 	"github.com/wetee-dao/libos-entry/model"
 )
 
-var Fs *EgoFs
+// var Fs *EgoFs
 
 func InitEgo() error {
 	hostfs := &EgoFs{}
-	Fs = hostfs
 	return libos.PreLoad(hostfs, false)
 }
 

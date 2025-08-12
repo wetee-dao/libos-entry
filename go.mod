@@ -11,6 +11,7 @@ require (
 	github.com/fatih/color v1.16.0
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/gogo/protobuf v1.3.2
+	github.com/ihciah/rust2go v0.0.0-20250726175549-557d7a3a4e27
 	github.com/spf13/afero v1.11.0
 	github.com/vedhavyas/go-subkey/v2 v2.0.0
 	github.com/wetee-dao/ink.go v0.1.27

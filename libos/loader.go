@@ -6,6 +6,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/cometbft/cometbft/abci/types"
@@ -53,33 +55,32 @@ func PreLoad(fs util.Fs, isMain bool) error {
 	return preLoad(fs, isMain, initEnv)
 }
 
-func PreLoadFromInitData(fs util.Fs, isMain bool) error {
-	// 读取环境变量
-	AppID := util.GetEnv("APPID", "NONE")
-	PodID := util.GetEnvU64("PODID", 0)
-	Files := util.GetEnv("__FILES__", "{}")
-	Encrypts := util.GetEnv("__ENCRYPTS__", "{}")
-	NameSpace := util.GetEnv("NAME_SPACE", "")
-	WorkerAddr := util.GetEnv("WORKER_ADDR", DefaultWorkAddr)
-	ChainAddr := util.GetEnv("CHAIN_ADDR", DefaultChainUrl)
+func PreLoadFromInitData(fs util.Fs, envs map[string]string, isMain bool) error {
+	podId := envs["PODID"]
+	i, err := strconv.ParseUint(podId, 10, 64)
+	if err != nil {
+		return err
+	}
 
 	initEnv := InitEnv{
-		AppID:      AppID,
-		PodID:      PodID,
-		Files:      Files,
-		Encrypts:   Encrypts,
-		NameSpace:  NameSpace,
-		WorkerAddr: WorkerAddr,
-		ChainAddr:  ChainAddr,
+		AppID:      envs["APPID"],
+		PodID:      i,
+		Files:      envs["__FILES__"],
+		Encrypts:   envs["__ENCRYPTS__"],
+		NameSpace:  envs["NAME_SPACE"],
+		WorkerAddr: envs["WORKER_ADDR"],
+		ChainAddr:  envs["CHAIN_ADDR"],
 	}
+
 	return preLoad(fs, isMain, initEnv)
 }
 
 func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) error {
 	inkutil.LogWithGray("WorkerAddr", initEnv.WorkerAddr)
+	inkutil.LogWithGray("ChainAddr", initEnv.ChainAddr)
 
 	// 生成 本次部署 Key
-	deploySinger, priv, _, err := util.GenerateKeyPair(rand.Reader)
+	podKey, priv, _, err := util.GenerateKeyPair(rand.Reader)
 	if err != nil {
 		return errors.New("GenerateKeyPair: " + err.Error())
 	}
@@ -125,16 +126,16 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) error {
 	// 解析远程worker的证书
 	// Parse the worker certificate
 	workerReport := new(model.TeeCall)
+	fmt.Println(string(workerReportBt))
 	err = protoio.ReadMessage(bytes.NewBuffer(workerReportBt), workerReport)
 	if err != nil {
 		return errors.New("Read Report Message: " + err.Error())
 	}
 
 	// 初始化区块链链接
-	c, err := chain.InitChain(initEnv.ChainAddr, deploySinger)
+	c, err := chain.InitChain(initEnv.ChainAddr, podKey)
 	if err != nil {
-		c.Close()
-		return errors.New("chain.InitChain: " + err.Error())
+		return errors.New("Chain.InitChain: " + err.Error())
 	}
 
 	// 验证远程worker的证书
@@ -169,14 +170,14 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) error {
 				Id:        uint64(initEnv.PodID),
 				AppId:     []byte(initEnv.AppID),
 				NameSpace: ns,
-				PubKey:    deploySinger.Public(),
+				PubKey:    podKey.Public(),
 				Indexs:    ids,
 			},
 		},
 	}
 
 	// issue report of TEE CALL
-	err = fs.IssueReport(*deploySinger, podMint)
+	err = fs.IssueReport(*podKey, podMint)
 	if err != nil {
 		return errors.New("GetRemoteReport: " + err.Error())
 	}
@@ -247,9 +248,9 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) error {
 	}
 
 	if isMain {
-		startTEEServer(fs, deploySinger, initEnv.ChainAddr)
+		startTEEServer(fs, podKey, initEnv.ChainAddr)
 	} else {
-		go startTEEServer(fs, deploySinger, initEnv.ChainAddr)
+		go startTEEServer(fs, podKey, initEnv.ChainAddr)
 	}
 
 	return nil
