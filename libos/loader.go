@@ -18,6 +18,16 @@ import (
 	"go.dedis.ch/kyber/v4/suites"
 )
 
+type InitEnv struct {
+	AppID      string
+	PodID      uint64
+	Files      string
+	Encrypts   string
+	NameSpace  string
+	WorkerAddr string
+	ChainAddr  string
+}
+
 var DefaultChainUrl string = "ws://192.168.111.105:9944"
 var DefaultWorkAddr string = "wetee-worker.worker-system.svc.cluster.local:8883"
 
@@ -28,10 +38,45 @@ func PreLoad(fs util.Fs, isMain bool) error {
 	Files := util.GetEnv("__FILES__", "{}")
 	Encrypts := util.GetEnv("__ENCRYPTS__", "{}")
 	NameSpace := util.GetEnv("NAME_SPACE", "")
-	workerAddr := util.GetEnv("WORKER_ADDR", DefaultWorkAddr)
-	chainAddr := util.GetEnv("CHAIN_ADDR", DefaultChainUrl)
+	WorkerAddr := util.GetEnv("WORKER_ADDR", DefaultWorkAddr)
+	ChainAddr := util.GetEnv("CHAIN_ADDR", DefaultChainUrl)
 
-	inkutil.LogWithGray("WorkerAddr", workerAddr)
+	initEnv := InitEnv{
+		AppID:      AppID,
+		PodID:      PodID,
+		Files:      Files,
+		Encrypts:   Encrypts,
+		NameSpace:  NameSpace,
+		WorkerAddr: WorkerAddr,
+		ChainAddr:  ChainAddr,
+	}
+	return preLoad(fs, isMain, initEnv)
+}
+
+func PreLoadFromInitData(fs util.Fs, isMain bool) error {
+	// 读取环境变量
+	AppID := util.GetEnv("APPID", "NONE")
+	PodID := util.GetEnvU64("PODID", 0)
+	Files := util.GetEnv("__FILES__", "{}")
+	Encrypts := util.GetEnv("__ENCRYPTS__", "{}")
+	NameSpace := util.GetEnv("NAME_SPACE", "")
+	WorkerAddr := util.GetEnv("WORKER_ADDR", DefaultWorkAddr)
+	ChainAddr := util.GetEnv("CHAIN_ADDR", DefaultChainUrl)
+
+	initEnv := InitEnv{
+		AppID:      AppID,
+		PodID:      PodID,
+		Files:      Files,
+		Encrypts:   Encrypts,
+		NameSpace:  NameSpace,
+		WorkerAddr: WorkerAddr,
+		ChainAddr:  ChainAddr,
+	}
+	return preLoad(fs, isMain, initEnv)
+}
+
+func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) error {
+	inkutil.LogWithGray("WorkerAddr", initEnv.WorkerAddr)
 
 	// 生成 本次部署 Key
 	deploySinger, priv, _, err := util.GenerateKeyPair(rand.Reader)
@@ -39,7 +84,7 @@ func PreLoad(fs util.Fs, isMain bool) error {
 		return errors.New("GenerateKeyPair: " + err.Error())
 	}
 
-	wChanel, workerReportBt, err := NewTEEClient(workerAddr)
+	wChanel, workerReportBt, err := NewTEEClient(initEnv.WorkerAddr)
 	if err != nil {
 		return errors.New("NewNewClient: " + err.Error())
 	}
@@ -86,7 +131,7 @@ func PreLoad(fs util.Fs, isMain bool) error {
 	}
 
 	// 初始化区块链链接
-	c, err := chain.InitChain(chainAddr, deploySinger)
+	c, err := chain.InitChain(initEnv.ChainAddr, deploySinger)
 	if err != nil {
 		c.Close()
 		return errors.New("chain.InitChain: " + err.Error())
@@ -101,11 +146,12 @@ func PreLoad(fs util.Fs, isMain bool) error {
 	}
 	c.Close()
 
+	// init env
 	files := map[string]string{}
 	encrypts := map[string]uint64{}
 	idNameMap := map[uint64]string{}
-	json.Unmarshal([]byte(Files), &files)
-	json.Unmarshal([]byte(Encrypts), &encrypts)
+	json.Unmarshal([]byte(initEnv.Files), &files)
+	json.Unmarshal([]byte(initEnv.Encrypts), &encrypts)
 
 	ids := []uint64{}
 	for name, id := range encrypts {
@@ -115,13 +161,13 @@ func PreLoad(fs util.Fs, isMain bool) error {
 
 	// 构建签名证明自己在集群中的身份
 	// Build the signature to prove your identity in the cluster
-	ns, _ := hex.DecodeString(NameSpace)
+	ns, _ := hex.DecodeString(initEnv.NameSpace)
 	podMint := &model.TeeCall{
 		Time: time.Now().Unix(),
 		Tx: &model.TeeCall_PodStart{
 			PodStart: &model.PodStart{
-				Id:        uint64(PodID),
-				AppId:     []byte(AppID),
+				Id:        uint64(initEnv.PodID),
+				AppId:     []byte(initEnv.AppID),
 				NameSpace: ns,
 				PubKey:    deploySinger.Public(),
 				Indexs:    ids,
@@ -201,9 +247,9 @@ func PreLoad(fs util.Fs, isMain bool) error {
 	}
 
 	if isMain {
-		startTEEServer(fs, deploySinger, chainAddr)
+		startTEEServer(fs, deploySinger, initEnv.ChainAddr)
 	} else {
-		go startTEEServer(fs, deploySinger, chainAddr)
+		go startTEEServer(fs, deploySinger, initEnv.ChainAddr)
 	}
 
 	return nil
