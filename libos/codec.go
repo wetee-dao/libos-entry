@@ -82,7 +82,7 @@ func Decode(c gnet.Conn) ([]byte, error) {
 func ReadFromApi(c net.Conn) ([]byte, error) {
 	bodyOffset := magicNumberSize + bodySize
 	headerData := make([]byte, bodyOffset)
-	_, readTagError := c.Read(headerData)
+	_, readTagError := io.ReadFull(c, headerData)
 	if readTagError != nil {
 		return nil, readTagError
 	}
@@ -93,7 +93,7 @@ func ReadFromApi(c net.Conn) ([]byte, error) {
 
 	bodyLen := binary.BigEndian.Uint32(headerData[magicNumberSize:bodyOffset])
 	bodyData := make([]byte, bodyLen)
-	_, readTagError = c.Read(bodyData)
+	_, readTagError = io.ReadFull(c, bodyData)
 	if readTagError != nil {
 		return nil, readTagError
 	}

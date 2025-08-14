@@ -11,7 +11,7 @@ func InitGramineEntry(hostfs util.Fs, isMain bool) (string, error) {
 
 	// 初始化配置文件/环境变量
 	// Initialize configuration files/environment variables
-	err := PreLoad(hostfs, isMain)
+	_, err := PreLoad(hostfs, isMain)
 	if err != nil {
 		return "", err
 	}

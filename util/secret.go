@@ -13,8 +13,8 @@ import (
 
 // 去中心化的机密注入
 type Secrets struct {
-	Envs  map[string]string
-	Files map[string][]byte
+	Envs  map[string]string `json:"envs"`
+	Files map[string][]byte `json:"files"`
 }
 
 func GenerateKeyPair(src io.Reader) (*chain.Signer, ed25519.PrivateKey, ed25519.PublicKey, error) {

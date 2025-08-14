@@ -29,13 +29,14 @@ func (CvmServer) start(req *CrossRequest) CrossResponse {
 	}
 
 	hostfs := &Fs{}
-	err = libos.PreLoadFromInitData(hostfs, envs, false)
+	datas, err := libos.PreLoadFromInitData(hostfs, envs, false)
 	if err != nil {
 		inkutil.LogWithGray("PreLoadFromInitData", err.Error())
 		return CrossResponse{code: 1, data: []byte(err.Error())}
 	}
 
-	return CrossResponse{code: 0}
+	bt, _ := json.Marshal(datas)
+	return CrossResponse{code: 0, data: bt}
 }
 
 type Fs struct {

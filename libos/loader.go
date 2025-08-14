@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"maps"
 	"strconv"
 	"time"
 
@@ -33,7 +33,7 @@ type InitEnv struct {
 var DefaultChainUrl string = "ws://192.168.111.105:9944"
 var DefaultWorkAddr string = "wetee-worker.worker-system.svc.cluster.local:8883"
 
-func PreLoad(fs util.Fs, isMain bool) error {
+func PreLoad(fs util.Fs, isMain bool) (map[int]*util.Secrets, error) {
 	// 读取环境变量
 	AppID := util.GetEnv("APPID", "NONE")
 	PodID := util.GetEnvU64("PODID", 0)
@@ -55,11 +55,11 @@ func PreLoad(fs util.Fs, isMain bool) error {
 	return preLoad(fs, isMain, initEnv)
 }
 
-func PreLoadFromInitData(fs util.Fs, envs map[string]string, isMain bool) error {
+func PreLoadFromInitData(fs util.Fs, envs map[string]string, isMain bool) (map[int]*util.Secrets, error) {
 	podId := envs["PODID"]
 	i, err := strconv.ParseUint(podId, 10, 64)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	initEnv := InitEnv{
@@ -75,19 +75,19 @@ func PreLoadFromInitData(fs util.Fs, envs map[string]string, isMain bool) error 
 	return preLoad(fs, isMain, initEnv)
 }
 
-func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) error {
+func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, error) {
 	inkutil.LogWithGray("WorkerAddr", initEnv.WorkerAddr)
 	inkutil.LogWithGray("ChainAddr", initEnv.ChainAddr)
 
 	// 生成 本次部署 Key
 	podKey, priv, _, err := util.GenerateKeyPair(rand.Reader)
 	if err != nil {
-		return errors.New("GenerateKeyPair: " + err.Error())
+		return nil, errors.New("GenerateKeyPair: " + err.Error())
 	}
 
 	wChanel, workerReportBt, err := NewTEEClient(initEnv.WorkerAddr)
 	if err != nil {
-		return errors.New("NewNewClient: " + err.Error())
+		return nil, errors.New("NewNewClient: " + err.Error())
 	}
 
 	go wChanel.Start()
@@ -126,16 +126,15 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) error {
 	// 解析远程worker的证书
 	// Parse the worker certificate
 	workerReport := new(model.TeeCall)
-	fmt.Println(string(workerReportBt))
 	err = protoio.ReadMessage(bytes.NewBuffer(workerReportBt), workerReport)
 	if err != nil {
-		return errors.New("Read Report Message: " + err.Error())
+		return nil, errors.New("Read Report Message: " + err.Error())
 	}
 
 	// 初始化区块链链接
 	c, err := chain.InitChain(initEnv.ChainAddr, podKey)
 	if err != nil {
-		return errors.New("Chain.InitChain: " + err.Error())
+		return nil, errors.New("Chain.InitChain: " + err.Error())
 	}
 
 	// 验证远程worker的证书
@@ -143,22 +142,23 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) error {
 	_, err = fs.VerifyReport(workerReport)
 	if err != nil {
 		c.Close()
-		return errors.New("VerifyReport: " + err.Error())
+		return nil, errors.New("VerifyReport: " + err.Error())
 	}
 	c.Close()
 
 	// init env
-	files := map[string]string{}
-	encrypts := map[string]uint64{}
-	idNameMap := map[uint64]string{}
+	files := map[int]map[string]string{}
+	encrypts := map[int]map[string]uint64{}
 	json.Unmarshal([]byte(initEnv.Files), &files)
 	json.Unmarshal([]byte(initEnv.Encrypts), &encrypts)
 
 	ids := []uint64{}
-	for name, id := range encrypts {
-		ids = append(ids, id)
-		idNameMap[id] = name
+	for _, cencrypts := range encrypts {
+		for _, id := range cencrypts {
+			ids = append(ids, id)
+		}
 	}
+	ids = util.Distinct(ids)
 
 	// 构建签名证明自己在集群中的身份
 	// Build the signature to prove your identity in the cluster
@@ -179,21 +179,21 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) error {
 	// issue report of TEE CALL
 	err = fs.IssueReport(*podKey, podMint)
 	if err != nil {
-		return errors.New("GetRemoteReport: " + err.Error())
+		return nil, errors.New("GetRemoteReport: " + err.Error())
 	}
 
 	// encode msg
 	buf := new(bytes.Buffer)
 	err = types.WriteMessage(podMint, buf)
 	if err != nil {
-		return errors.New("WriteMessage: " + err.Error())
+		return nil, errors.New("WriteMessage: " + err.Error())
 	}
 
 	// 向集群请求机密
 	// Request confidential
 	bt, err := wChanel.Invoke("/launch", buf.Bytes())
 	if err != nil {
-		return errors.New("Launch: " + err.Error())
+		return nil, errors.New("Launch: " + err.Error())
 	}
 
 	// 解析机密数据
@@ -201,22 +201,17 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) error {
 	secrets := new(model.DecryptResp)
 	err = protoio.ReadMessage(bytes.NewBuffer(bt), secrets)
 	if err != nil {
-		return errors.New("ReadMessage: " + err.Error())
+		return nil, errors.New("ReadMessage: " + err.Error())
 	}
 
-	// 解析机密
-	// Parse the secret
-	secretEnv := &util.Secrets{
-		Envs:  map[string]string{},
-		Files: map[string][]byte{},
-	}
+	secretMap := map[uint64]string{}
 
 	// 将机密数据转换为环境变量
 	// Convert secret data to environment variables
 	suite := suites.MustFind("Ed25519")
 	dkgPubKey := suite.Point()
 	dkgPubKey.UnmarshalBinary(secrets.DkgKey)
-	for index, secret := range secrets.Lists {
+	for id, secret := range secrets.Lists {
 		rawXncCmt := secret.XncCmt
 		xncCmt := suite.Point()
 		xncCmt.UnmarshalBinary(rawXncCmt)
@@ -228,23 +223,48 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) error {
 		}
 		data, err := util.DecryptSecret(suite, encScrts, dkgPubKey, xncCmt, util.Ed25519Scalar(suite, priv))
 		if err != nil {
-			return errors.New("DecryptSecret: " + err.Error())
+			return nil, errors.New("DecryptSecret: " + err.Error())
 		}
-		secretEnv.Envs[idNameMap[index]] = string(data)
+		secretMap[id] = string(data)
+	}
+
+	// 解析机密
+	// Parse the secret
+	secretEnv := map[int]*util.Secrets{}
+	for index, cencrypts := range encrypts {
+		if secretEnv[index] == nil {
+			secretEnv[index] = &util.Secrets{
+				Envs:  map[string]string{},
+				Files: map[string][]byte{},
+			}
+		}
+		for k, id := range cencrypts {
+			secretEnv[index].Envs[k] = secretMap[id]
+		}
 	}
 
 	// 保存文件
 	// Save the file
-	for key, value := range files {
-		bt, _ := hex.DecodeString(value)
-		secretEnv.Files[key] = bt
+	for index, cfiles := range files {
+		if secretEnv[index] == nil {
+			secretEnv[index] = &util.Secrets{
+				Envs:  map[string]string{},
+				Files: map[string][]byte{},
+			}
+		}
+		maps.Copy(secretEnv[index].Envs, cfiles)
 	}
 
-	// 部署机密到运行环境
-	// Deploy secrets to the runtime environment
-	err = applySecrets(secretEnv, fs)
-	if err != nil {
-		return errors.New("applySecrets: " + err.Error())
+	if podMint.TeeType == 0 {
+		// SGX 部署机密到运行环境
+		// SGX Deploy secrets to the runtime environment
+		err = applySecrets(secretEnv[0], fs)
+		if err != nil {
+			return nil, errors.New("applySecrets: " + err.Error())
+		}
+	} else {
+		// CVM 储存机密
+		// CVM Store secrets
 	}
 
 	if isMain {
@@ -253,5 +273,5 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) error {
 		go startTEEServer(fs, podKey, initEnv.ChainAddr)
 	}
 
-	return nil
+	return secretEnv, nil
 }

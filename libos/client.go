@@ -17,7 +17,7 @@ import (
 
 func NewTEEClient(addr string) (*TEEClinet, []byte, error) {
 	tc := TEEClinet{}
-	conn, err := net.Dial("tcp", addr)
+	conn, err := net.DialTimeout("tcp", addr, 20*time.Second)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 )
 
@@ -14,10 +15,13 @@ func TestImpl(t *testing.T) {
 		"CHAIN_ADDR":   "ws://192.168.110.205:9944",
 		"WORKER_ADDR":  "192.168.110.205:8883",
 		"NAME_SPACE":   "9621dde636de098b43efb0fa9b61facfe328f99d",
-		"__FILES__":    "{\"K2\":\"4b33\"}",
-		"__ENCRYPTS__": "{\"K2\":0}",
+		"__FILES__":    "{\"0\":{\"K2\":\"4b33\"}}",
+		"__ENCRYPTS__": "{\"0\":{\"K2\":0}}",
 	}
 	bt, _ := json.Marshal(m)
 
-	s.start(&CrossRequest{env: bt})
+	resp := s.start(&CrossRequest{env: bt})
+	fmt.Println(string(resp.data))
 }
+
+// {"0":{"Envs":{"K2":"4b33"},"Files":{}}}
