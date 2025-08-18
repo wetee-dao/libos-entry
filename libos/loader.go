@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"maps"
 	"strconv"
 	"time"
 
@@ -225,6 +224,7 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, e
 		if err != nil {
 			return nil, errors.New("DecryptSecret: " + err.Error())
 		}
+
 		secretMap[id] = string(data)
 	}
 
@@ -252,7 +252,13 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, e
 				Files: map[string][]byte{},
 			}
 		}
-		maps.Copy(secretEnv[index].Envs, cfiles)
+
+		for path, value := range cfiles {
+			bt, err := hex.DecodeString(value)
+			if err == nil {
+				secretEnv[index].Files[path] = bt
+			}
+		}
 	}
 
 	if podMint.TeeType == 0 {
