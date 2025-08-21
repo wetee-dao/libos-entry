@@ -14,6 +14,11 @@ import (
 	"github.com/wetee-dao/libos-entry/model"
 )
 
+var (
+	SevGuestDevicePath = "/dev/sev-guest"
+	TdxGuestDevicePath = "/dev/tdx_guest"
+)
+
 type CvmServer struct {
 }
 
@@ -83,26 +88,44 @@ func (e *Fs) Encrypt(val []byte) ([]byte, error) {
 
 // IssueReport implements libos.TeeFunction.
 func (i *Fs) IssueReport(pk chain.Signer, call *model.TeeCall) error {
+	// Check AMD SEV-SNP
+	if model.CheckExists(SevGuestDevicePath) {
+		return model.IssueReport(&pk, call, 1)
+	}
+
+	// Check Intel TDX
+	if model.CheckExists(TdxGuestDevicePath) {
+		return model.IssueReport(&pk, call, 2)
+	}
+
+	// Return no TEE
 	timestamp := time.Now().Unix()
 	call.Time = timestamp
-	call.TeeType = 1
-
+	call.TeeType = 9999
 	call.Caller = pk.PublicKey
 	return nil
 }
 
 // VerifyReport implements libos.TeeFunction.
-func (e *Fs) VerifyReport(workerReport *model.TeeCall) (*model.TeeVerifyResult, error) {
+func (e *Fs) VerifyReport(reportData *model.TeeCall) (*model.TeeVerifyResult, error) {
 	// 检查时间戳，超过 30s 签名过期
-	if workerReport.Time+30 < time.Now().Unix() {
+	if reportData.Time+30 < time.Now().Unix() {
 		return nil, errors.New("report expired")
 	}
 
-	// return model.VerifyReport(workerReport)
-	return &model.TeeVerifyResult{
-		TeeType:       workerReport.TeeType,
-		CodeSigner:    []byte{},
-		CodeSignature: []byte{},
-		CodeProductId: []byte{},
-	}, nil
+	// No TEE
+	if reportData.TeeType == 9999 {
+		return nil, errors.New("report is not call from TEE")
+	}
+
+	// TODO SGX not support
+	if reportData.TeeType == 0 {
+		return &model.TeeVerifyResult{
+			CodeSignature: []byte{},
+			CodeSigner:    []byte{},
+			CodeProductId: []byte{},
+		}, nil
+	}
+
+	return model.VerifyReport(reportData)
 }

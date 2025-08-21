@@ -11,6 +11,7 @@ require (
 	github.com/fatih/color v1.16.0
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/gogo/protobuf v1.3.2
+	github.com/google/go-sev-guest v0.13.0
 	github.com/ihciah/rust2go v0.0.0-20250726175549-557d7a3a4e27
 	github.com/spf13/afero v1.11.0
 	github.com/vedhavyas/go-subkey/v2 v2.0.0
@@ -26,6 +27,9 @@ require (
 	github.com/consensys/bavard v0.1.13 // indirect
 	github.com/consensys/gnark-crypto v0.12.1 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
+	github.com/google/go-configfs-tsm v0.2.2 // indirect
+	github.com/google/logger v1.1.1 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/kilic/bls12-381 v0.1.0 // indirect
 	github.com/mmcloughlin/addchain v0.4.0 // indirect
 	github.com/panjf2000/ants/v2 v2.11.3 // indirect
