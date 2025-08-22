@@ -88,22 +88,7 @@ func (e *Fs) Encrypt(val []byte) ([]byte, error) {
 
 // IssueReport implements libos.TeeFunction.
 func (i *Fs) IssueReport(pk chain.Signer, call *model.TeeCall) error {
-	// Check AMD SEV-SNP
-	if model.CheckExists(SevGuestDevicePath) {
-		return model.IssueReport(&pk, call, 1)
-	}
-
-	// Check Intel TDX
-	if model.CheckExists(TdxGuestDevicePath) {
-		return model.IssueReport(&pk, call, 2)
-	}
-
-	// Return no TEE
-	timestamp := time.Now().Unix()
-	call.Time = timestamp
-	call.TeeType = 9999
-	call.Caller = pk.PublicKey
-	return nil
+	return model.IssueReport(&pk, call)
 }
 
 // VerifyReport implements libos.TeeFunction.

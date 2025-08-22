@@ -4,19 +4,30 @@ import (
 	"encoding/binary"
 	"errors"
 	"os"
+	"time"
 
 	chain "github.com/wetee-dao/ink.go"
 )
 
-func IssueReport(pk *chain.Signer, call *TeeCall, teeType uint32) error {
-	switch teeType {
-	case 0:
-		return SgxIssue(pk, call)
-	case 1:
+var (
+	SevGuestDevicePath = "/dev/sev-guest"
+	TdxGuestDevicePath = "/dev/tdx_guest"
+)
+
+func IssueReport(pk *chain.Signer, call *TeeCall) error {
+	if CheckExists(SevGuestDevicePath) {
 		return SnpIssue(pk, call)
 	}
 
-	return errors.New("unknown tee type")
+	if CheckExists("/dev/sgx") {
+		return SgxIssue(pk, call)
+	}
+
+	timestamp := time.Now().Unix()
+	call.Time = timestamp
+	call.TeeType = 9999
+	call.Caller = pk.PublicKey
+	return nil
 }
 
 func VerifyReport(reportData *TeeCall) (*TeeVerifyResult, error) {
