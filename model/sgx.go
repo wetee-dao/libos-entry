@@ -2,8 +2,12 @@ package model
 
 import (
 	"bytes"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/edgelesssys/ego/attestation"
@@ -97,12 +101,21 @@ func ClientSgxVerify(reportData *TeeCall) (*TeeVerifyResult, error) {
 	// decode address
 	signer := reportData.Caller
 
-	report, err := enclave.VerifyRemoteReport(reportBytes)
-	if err == attestation.ErrTCBLevelInvalid {
-		fmt.Printf("Warning: TCB level is invalid: %v\n%v\n", report.TCBStatus, tcbstatus.Explain(report.TCBStatus))
-	} else if err != nil {
-		return nil, err
+	// call sgx-verify
+	reportBt := base64.StdEncoding.EncodeToString(reportBytes)
+	cmd := exec.Command("sgx-verify", reportBt)
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, errors.New("call sgx-verify errors" + err.Error())
 	}
+	outs := strings.Split(string(output), "⊂⊂⊂⊂")
+	datas := strings.Split(outs[1], "∐∐∐∐")
+	report := &attestation.Report{}
+	err = json.Unmarshal([]byte(datas[1]), report)
+	if err != nil {
+		return nil, errors.New("call sgx-verify unmarshal errors" + err.Error())
+	}
+	// end call sgx-verify
 
 	pubkey, err := ed25519.Scheme{}.FromPublicKey(signer)
 	if err != nil {

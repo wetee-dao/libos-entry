@@ -118,14 +118,5 @@ func (e *Fs) VerifyReport(reportData *model.TeeCall) (*model.TeeVerifyResult, er
 		return nil, errors.New("report is not call from TEE")
 	}
 
-	// TODO SGX not support
-	if reportData.TeeType == 0 {
-		return &model.TeeVerifyResult{
-			CodeSignature: []byte{},
-			CodeSigner:    []byte{},
-			CodeProductId: []byte{},
-		}, nil
-	}
-
 	return model.VerifyReport(reportData)
 }
