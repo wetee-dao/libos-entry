@@ -22,7 +22,7 @@ func NewTEEClient(addr string) (*TEEClinet, []byte, error) {
 		return nil, nil, err
 	}
 
-	msg, err := ReadFromApi(conn)
+	_, msg, err := ReadFromApi(conn)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -50,7 +50,7 @@ func (w *TEEClinet) Start() error {
 	conn := w.conn
 
 	for {
-		msg, err := ReadFromApi(conn)
+		id, msg, err := ReadFromApi(conn)
 		if err != nil {
 			if err != io.EOF {
 				fmt.Println("Disconnected from server:", err)
@@ -66,7 +66,7 @@ func (w *TEEClinet) Start() error {
 			continue
 		}
 
-		respChan := w.requests[val.ReqId]
+		respChan := w.requests[id]
 		if respChan != nil {
 			respChan <- val
 		}
@@ -76,10 +76,10 @@ func (w *TEEClinet) Start() error {
 // Invoke worker function
 func (w *TEEClinet) Invoke(url string, data []byte) ([]byte, error) {
 	req := &model.ApiReq{
-		Id:   GenerateUniqueID(),
 		Url:  []byte(url),
 		Data: data,
 	}
+	id := GenerateUniqueID()
 
 	buf := new(bytes.Buffer)
 	err := types.WriteMessage(req, buf)
@@ -87,7 +87,7 @@ func (w *TEEClinet) Invoke(url string, data []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	bt, err := Encode(buf.Bytes())
+	bt, err := Encode(id, buf.Bytes())
 	if err != nil {
 		return nil, err
 	}
@@ -100,12 +100,12 @@ func (w *TEEClinet) Invoke(url string, data []byte) ([]byte, error) {
 	// 创建返回 channel
 	respChan := make(chan *model.ApiResp, 1)
 	w.mu.Lock()
-	w.requests[req.Id] = respChan
+	w.requests[id] = respChan
 	w.mu.Unlock()
 
-	resp := <-w.requests[req.Id]
+	resp := <-w.requests[id]
 	w.mu.Lock()
-	delete(w.requests, req.Id)
+	delete(w.requests, id)
 	w.mu.Unlock()
 
 	if resp.Code != 0 {

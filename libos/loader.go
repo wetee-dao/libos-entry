@@ -178,7 +178,7 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, e
 	// issue report of TEE CALL
 	err = fs.IssueReport(*podKey, podMint)
 	if err != nil {
-		return nil, errors.New("GetRemoteReport: " + err.Error())
+		return nil, errors.New("IssueReport: " + err.Error())
 	}
 
 	// encode msg

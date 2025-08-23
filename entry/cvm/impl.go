@@ -14,11 +14,6 @@ import (
 	"github.com/wetee-dao/libos-entry/model"
 )
 
-var (
-	SevGuestDevicePath = "/dev/sev-guest"
-	TdxGuestDevicePath = "/dev/tdx_guest"
-)
-
 type CvmServer struct {
 }
 
@@ -66,7 +61,6 @@ func (e *Fs) ReadFile(filename string) ([]byte, error) {
 
 // Write implements util.Fs.
 func (e *Fs) WriteFile(filename string, data []byte, perm os.FileMode) error {
-
 	// 加密数据
 	val, err := e.Encrypt(data)
 	if err != nil {
@@ -96,11 +90,6 @@ func (e *Fs) VerifyReport(reportData *model.TeeCall) (*model.TeeVerifyResult, er
 	// 检查时间戳，超过 30s 签名过期
 	if reportData.Time+30 < time.Now().Unix() {
 		return nil, errors.New("report expired")
-	}
-
-	// No TEE
-	if reportData.TeeType == 9999 {
-		return nil, errors.New("report is not call from TEE")
 	}
 
 	return model.VerifyReport(reportData)

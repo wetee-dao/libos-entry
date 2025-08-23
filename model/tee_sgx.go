@@ -17,6 +17,7 @@ import (
 	chain "github.com/wetee-dao/ink.go"
 )
 
+// sgx issue report
 func SgxIssue(pk *chain.Signer, call *TeeCall) error {
 	timestamp := time.Now().Unix()
 	var buf bytes.Buffer
@@ -47,6 +48,7 @@ func SgxIssue(pk *chain.Signer, call *TeeCall) error {
 	return nil
 }
 
+// sgx verify
 func SgxVerify(reportData *TeeCall) (*TeeVerifyResult, error) {
 	payload := reportData.Tx
 	msgBytes := make([]byte, payload.Size())
@@ -92,6 +94,7 @@ func SgxVerify(reportData *TeeCall) (*TeeVerifyResult, error) {
 	}, nil
 }
 
+// client sgx verify
 func ClientSgxVerify(reportData *TeeCall) (*TeeVerifyResult, error) {
 	payload := reportData.Tx
 	msgBytes := make([]byte, payload.Size())
@@ -103,7 +106,7 @@ func ClientSgxVerify(reportData *TeeCall) (*TeeVerifyResult, error) {
 
 	// call sgx-verify
 	reportBt := base64.StdEncoding.EncodeToString(reportBytes)
-	cmd := exec.Command("sgx-verify", reportBt)
+	cmd := exec.Command("/usr/local/bin/sgx-verify", reportBt)
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, errors.New("call sgx-verify errors" + err.Error())

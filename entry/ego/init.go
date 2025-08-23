@@ -69,7 +69,7 @@ func (e *EgoFs) Encrypt(val []byte) ([]byte, error) {
 
 // IssueReport implements libos.TeeFunction.
 func (i *EgoFs) IssueReport(pk chain.Signer, call *model.TeeCall) error {
-	return model.IssueReport(&pk, call)
+	return model.SgxIssue(&pk, call)
 }
 
 // VerifyReport implements libos.TeeFunction.

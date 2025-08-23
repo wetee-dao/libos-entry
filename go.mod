@@ -7,7 +7,7 @@ toolchain go1.23.10
 require (
 	github.com/centrifuge/go-substrate-rpc-client/v4 v4.2.2-0.20240919131012-e3b938563803
 	github.com/cosmos/gogoproto v1.7.0
-	github.com/edgelesssys/ego v1.4.1
+	github.com/edgelesssys/ego v1.7.2
 	github.com/fatih/color v1.16.0
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/gogo/protobuf v1.3.2
@@ -26,6 +26,7 @@ require (
 	github.com/cometbft/cometbft/api v1.0.0 // indirect
 	github.com/consensys/bavard v0.1.13 // indirect
 	github.com/consensys/gnark-crypto v0.12.1 // indirect
+	github.com/go-jose/go-jose/v4 v4.0.5 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/go-configfs-tsm v0.2.2 // indirect
 	github.com/google/logger v1.1.1 // indirect
@@ -72,6 +73,5 @@ require (
 	golang.org/x/text v0.25.0 // indirect
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
-	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

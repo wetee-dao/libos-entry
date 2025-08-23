@@ -3,6 +3,7 @@ package model
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/cometbft/cometbft/abci/types"
@@ -14,6 +15,7 @@ import (
 	"github.com/wetee-dao/libos-entry/model/protoio"
 )
 
+// snp issue
 func SnpIssue(pk *chain.Signer, call *TeeCall) error {
 	timestamp := time.Now().Unix()
 	var buf bytes.Buffer
@@ -34,16 +36,17 @@ func SnpIssue(pk *chain.Signer, call *TeeCall) error {
 	if err != nil {
 		return err
 	}
-	defer device.Close()
 
 	sig64 := *(*[64]byte)(sig[:64])
 	attestationReport, err := client.GetExtendedReport(device, sig64)
 	if err != nil {
+		device.Close()
 		return errors.New("client.GetExtendedReport:" + err.Error())
 	}
+	device.Close()
 
-	reportBuf := new(bytes.Buffer)
-	err = types.WriteMessage(attestationReport, reportBuf)
+	data := new(bytes.Buffer)
+	err = types.WriteMessage(attestationReport, data)
 	if err != nil {
 		return err
 	}
@@ -51,13 +54,20 @@ func SnpIssue(pk *chain.Signer, call *TeeCall) error {
 	// add report to call
 	call.Time = timestamp
 	call.TeeType = 1
-	call.Report = reportBuf.Bytes()
+	call.Report = data.Bytes()
 	call.Caller = pk.PublicKey
 
 	return nil
 }
 
-func SnpVerify(reportData *TeeCall) (*TeeVerifyResult, error) {
+// snp verify
+func SnpVerify(reportData *TeeCall) (result *TeeVerifyResult, err error) {
+	defer func() {
+		if rerr := recover(); rerr != nil {
+			result = nil
+			err = errors.New("unkown error:" + fmt.Sprint(rerr))
+		}
+	}()
 	payload := reportData.Tx
 	msgBytes := make([]byte, payload.Size())
 	payload.MarshalTo(msgBytes)
@@ -66,7 +76,7 @@ func SnpVerify(reportData *TeeCall) (*TeeVerifyResult, error) {
 	signer := reportData.Caller
 
 	attestation := new(sevsnp.Attestation)
-	err := protoio.ReadMessage(bytes.NewBuffer(reportBytes), attestation)
+	err = protoio.ReadMessage(bytes.NewBuffer(reportBytes), attestation)
 	if err != nil {
 		return nil, err
 	}
