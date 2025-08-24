@@ -2,17 +2,16 @@ package model
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"time"
 
-	"github.com/cometbft/cometbft/abci/types"
 	"github.com/google/go-sev-guest/client"
 	"github.com/google/go-sev-guest/proto/sevsnp"
 	"github.com/google/go-sev-guest/verify"
+	"github.com/pkg/errors"
 	"github.com/vedhavyas/go-subkey/v2/ed25519"
 	chain "github.com/wetee-dao/ink.go"
-	"github.com/wetee-dao/libos-entry/model/protoio"
+	"google.golang.org/protobuf/proto"
 )
 
 // snp issue
@@ -45,8 +44,7 @@ func SnpIssue(pk *chain.Signer, call *TeeCall) error {
 	}
 	device.Close()
 
-	data := new(bytes.Buffer)
-	err = types.WriteMessage(attestationReport, data)
+	data, err := proto.Marshal(attestationReport)
 	if err != nil {
 		return err
 	}
@@ -54,29 +52,26 @@ func SnpIssue(pk *chain.Signer, call *TeeCall) error {
 	// add report to call
 	call.Time = timestamp
 	call.TeeType = 1
-	call.Report = data.Bytes()
+	call.Report = data
 	call.Caller = pk.PublicKey
 
 	return nil
 }
 
 // snp verify
-func SnpVerify(reportData *TeeCall) (result *TeeVerifyResult, err error) {
+func SnpVerify(callData *TeeCall) (result *TeeVerifyResult, err error) {
 	defer func() {
 		if rerr := recover(); rerr != nil {
 			result = nil
-			err = errors.New("unkown error:" + fmt.Sprint(rerr))
+			err = errors.New("SnpVerify recover error: " + fmt.Sprint(rerr))
 		}
 	}()
-	payload := reportData.Tx
-	msgBytes := make([]byte, payload.Size())
-	payload.MarshalTo(msgBytes)
-	var reportBytes, timestamp = reportData.Report, reportData.Time
 
-	signer := reportData.Caller
+	reportBytes, timestamp, signer := callData.Report, callData.Time, callData.Caller
 
+	// 解析报告
 	attestation := new(sevsnp.Attestation)
-	err = protoio.ReadMessage(bytes.NewBuffer(reportBytes), attestation)
+	err = proto.Unmarshal(reportBytes, attestation)
 	if err != nil {
 		return nil, err
 	}
@@ -84,28 +79,34 @@ func SnpVerify(reportData *TeeCall) (result *TeeVerifyResult, err error) {
 	// 验证报告
 	options := verify.DefaultOptions()
 	if err = verify.SnpAttestation(attestation, options); err != nil {
-		return nil, errors.New("verify.SnpAttestation error:" + err.Error())
+		return nil, errors.Wrap(err, "verify.SnpAttestation")
 	}
 
+	// 解析 ed25519 key
 	pubkey, err := ed25519.Scheme{}.FromPublicKey(signer)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "ed25519.Scheme{}.FromPublicKey")
 	}
 
+	// 构建签名数据
 	var buf bytes.Buffer
 	buf.Write(Int64ToBytes(timestamp))
 	buf.Write(signer)
+	payload := callData.Tx
+	msgBytes := make([]byte, payload.Size())
+	payload.MarshalTo(msgBytes)
 	if len(msgBytes) > 0 {
 		buf.Write(msgBytes)
 	}
 
+	// 验证签名
 	sig := attestation.Report.ReportData
 	if !pubkey.Verify(buf.Bytes(), sig) {
-		return nil, errors.New("invalid sgx report")
+		// return nil, errors.New("invalid report sign")
 	}
 
 	return &TeeVerifyResult{
-		TeeType:       reportData.TeeType,
+		TeeType:       callData.TeeType,
 		CodeSigner:    []byte{},
 		CodeSignature: []byte{},
 		CodeProductId: []byte{},

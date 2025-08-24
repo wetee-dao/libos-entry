@@ -2,17 +2,13 @@ package libos
 
 import (
 	"encoding/binary"
-	"errors"
 	"io"
 	"net"
 
 	"github.com/panjf2000/gnet/v2"
 )
 
-var ErrIncompletePacket = errors.New("msg codec incomplete packet")
-
 const (
-	head     = 1314
 	headSize = 8
 	bodySize = 4
 )
@@ -48,10 +44,7 @@ func Decode(c gnet.Conn) (uint64, []byte, error) {
 	bodyOffset := headSize + bodySize
 	buf, err := c.Peek(bodyOffset)
 	if err != nil {
-		if errors.Is(err, io.ErrShortBuffer) {
-			err = ErrIncompletePacket
-		}
-		return 0, nil, errors.New("Peek bodyOffset failed:" + err.Error())
+		return 0, nil, err
 	}
 
 	id := binary.BigEndian.Uint64(buf[:headSize])
@@ -60,10 +53,7 @@ func Decode(c gnet.Conn) (uint64, []byte, error) {
 	msgLen := bodyOffset + int(bodyLen)
 	buf, err = c.Peek(msgLen)
 	if err != nil {
-		if errors.Is(err, io.ErrShortBuffer) {
-			err = ErrIncompletePacket
-		}
-		return 0, nil, errors.New("Peek msgLen failed:" + err.Error())
+		return 0, nil, err
 	}
 	body := make([]byte, bodyLen)
 	copy(body, buf[bodyOffset:msgLen])

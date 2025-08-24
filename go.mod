@@ -65,6 +65,7 @@ require (
 	github.com/mimoo/StrobeGo v0.0.0-20220103164710-9a04d6ca976b // indirect
 	github.com/panjf2000/gnet/v2 v2.9.2
 	github.com/pierrec/xxHash v0.1.5 // indirect
+	github.com/pkg/errors v0.9.1
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
