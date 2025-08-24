@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-sev-guest/proto/sevsnp"
 	"github.com/google/go-sev-guest/verify"
 	"github.com/pkg/errors"
-	"github.com/vedhavyas/go-subkey/v2/ed25519"
 	chain "github.com/wetee-dao/ink.go"
 	"google.golang.org/protobuf/proto"
 )
@@ -82,12 +81,6 @@ func SnpVerify(callData *TeeCall) (result *TeeVerifyResult, err error) {
 		return nil, errors.Wrap(err, "verify.SnpAttestation")
 	}
 
-	// 解析 ed25519 key
-	pubkey, err := ed25519.Scheme{}.FromPublicKey(signer)
-	if err != nil {
-		return nil, errors.Wrap(err, "ed25519.Scheme{}.FromPublicKey")
-	}
-
 	// 构建签名数据
 	var buf bytes.Buffer
 	buf.Write(Int64ToBytes(timestamp))
@@ -101,8 +94,8 @@ func SnpVerify(callData *TeeCall) (result *TeeVerifyResult, err error) {
 
 	// 验证签名
 	sig := attestation.Report.ReportData
-	if !pubkey.Verify(buf.Bytes(), sig) {
-		// return nil, errors.New("invalid report sign")
+	if !SignVerify(callData.Caller, buf.Bytes(), sig) {
+		return nil, errors.New("invalid report sign")
 	}
 
 	return &TeeVerifyResult{
