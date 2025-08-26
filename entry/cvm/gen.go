@@ -20,6 +20,7 @@ typedef struct CrossRequestRef {
 
 typedef struct CrossResponseRef {
   uint8_t code;
+  struct ListRef images;
   struct ListRef data;
 } CrossResponseRef;
 
@@ -250,31 +251,34 @@ func refCrossRequest(p *CrossRequest, buffer *[]byte) C.CrossRequestRef {
 }
 
 type CrossResponse struct {
-	code uint8
-	data []uint8
+	code   uint8
+	images []string
+	data   []uint8
 }
 
 func newCrossResponse(p C.CrossResponseRef) CrossResponse {
 	return CrossResponse{
-		code: newC_uint8_t(p.code),
-		data: new_list_mapper_primitive(newC_uint8_t)(p.data),
+		code:   newC_uint8_t(p.code),
+		images: new_list_mapper(newString)(p.images),
+		data:   new_list_mapper_primitive(newC_uint8_t)(p.data),
 	}
 }
 func ownCrossResponse(p C.CrossResponseRef) CrossResponse {
 	return CrossResponse{
-		code: newC_uint8_t(p.code),
-		data: new_list_mapper(newC_uint8_t)(p.data),
+		code:   newC_uint8_t(p.code),
+		images: new_list_mapper(ownString)(p.images),
+		data:   new_list_mapper(newC_uint8_t)(p.data),
 	}
 }
 func cntCrossResponse(s *CrossResponse, cnt *uint) [0]C.CrossResponseRef {
-	_ = s
-	_ = cnt
+	cnt_list_mapper(cntString)(&s.images, cnt)
 	return [0]C.CrossResponseRef{}
 }
 func refCrossResponse(p *CrossResponse, buffer *[]byte) C.CrossResponseRef {
 	return C.CrossResponseRef{
-		code: refC_uint8_t(&p.code, buffer),
-		data: ref_list_mapper_primitive(refC_uint8_t)(&p.data, buffer),
+		code:   refC_uint8_t(&p.code, buffer),
+		images: ref_list_mapper(refString)(&p.images, buffer),
+		data:   ref_list_mapper_primitive(refC_uint8_t)(&p.data, buffer),
 	}
 }
 func main() {}

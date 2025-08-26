@@ -46,10 +46,6 @@ func SgxIssue(pk *chain.Signer, call *TeeCall) error {
 	call.Report = report
 	call.Caller = pk.PublicKey
 
-	if !SignVerify(pk.PublicKey, buf.Bytes(), sig) {
-		fmt.Println("---------------3 ", "invalid sgx report")
-	}
-
 	return nil
 }
 
@@ -117,11 +113,6 @@ func ClientSgxVerify(reportData *TeeCall) (*TeeVerifyResult, error) {
 	}
 	// end call sgx-verify
 
-	pubkey, err := ed25519.Scheme{}.FromPublicKey(signer)
-	if err != nil {
-		return nil, err
-	}
-
 	var buf bytes.Buffer
 	buf.Write(Int64ToBytes(timestamp))
 	buf.Write(signer)
@@ -130,8 +121,8 @@ func ClientSgxVerify(reportData *TeeCall) (*TeeVerifyResult, error) {
 	}
 
 	sig := report.Data
-	if !pubkey.Verify(buf.Bytes(), sig) {
-		return nil, errors.New("invalid sgx report")
+	if !SignVerify(reportData.Caller, buf.Bytes(), sig) {
+		return nil, errors.New("invalid report sign")
 	}
 
 	// if report.Debug {

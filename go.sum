@@ -132,8 +132,8 @@ github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6Kllzaw
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/vedhavyas/go-subkey/v2 v2.0.0 h1:LemDIsrVtRSOkp0FA8HxP6ynfKjeOj3BY2U9UNfeDMA=
 github.com/vedhavyas/go-subkey/v2 v2.0.0/go.mod h1:95aZ+XDCWAUUynjlmi7BtPExjXgXxByE0WfBwbmIRH4=
-github.com/wetee-dao/ink.go v0.1.27 h1:J51Js8aFFq4WJCw7B3G4A1hxK86q+K+cUtbKMm5eM8M=
-github.com/wetee-dao/ink.go v0.1.27/go.mod h1:RJZENNApsDYSU9r91Z9RLTCts6y+O9xpS5aSM7KxEl0=
+github.com/wetee-dao/ink.go v0.1.30 h1:Y/E1mYEe8kq/3ZFCSR4trWsJPLWVHnPFVFL9hsQaZe4=
+github.com/wetee-dao/ink.go v0.1.30/go.mod h1:RJZENNApsDYSU9r91Z9RLTCts6y+O9xpS5aSM7KxEl0=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 go.dedis.ch/fixbuf v1.0.3 h1:hGcV9Cd/znUxlusJ64eAlExS+5cJDIyTyEG+otu5wQs=

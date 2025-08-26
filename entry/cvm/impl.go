@@ -36,7 +36,7 @@ func (CvmServer) start(req *CrossRequest) CrossResponse {
 	}
 
 	bt, _ := json.Marshal(datas)
-	return CrossResponse{code: 0, data: bt}
+	return CrossResponse{code: 0, images: libos.Images, data: bt}
 }
 
 type Fs struct {

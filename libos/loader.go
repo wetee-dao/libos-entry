@@ -11,7 +11,6 @@ import (
 
 	"github.com/cometbft/cometbft/abci/types"
 	inkutil "github.com/wetee-dao/ink.go/util"
-	"github.com/wetee-dao/libos-entry/libos/chain"
 	"github.com/wetee-dao/libos-entry/model"
 	"github.com/wetee-dao/libos-entry/model/protoio"
 	"github.com/wetee-dao/libos-entry/util"
@@ -31,6 +30,7 @@ type InitEnv struct {
 
 var DefaultChainUrl string = "ws://192.168.111.105:9944"
 var DefaultWorkAddr string = "wetee-worker.worker-system.svc.cluster.local:8883"
+var Images []string = []string{}
 
 func PreLoad(fs util.Fs, isMain bool) (map[int]*util.Secrets, error) {
 	// 读取环境变量
@@ -56,14 +56,14 @@ func PreLoad(fs util.Fs, isMain bool) (map[int]*util.Secrets, error) {
 
 func PreLoadFromInitData(fs util.Fs, envs map[string]string, isMain bool) (map[int]*util.Secrets, error) {
 	podId := envs["PODID"]
-	i, err := strconv.ParseUint(podId, 10, 64)
+	id, err := strconv.ParseUint(podId, 10, 64)
 	if err != nil {
 		return nil, err
 	}
 
 	initEnv := InitEnv{
 		AppID:      envs["APPID"],
-		PodID:      i,
+		PodID:      id,
 		Files:      envs["__FILES__"],
 		Encrypts:   envs["__ENCRYPTS__"],
 		NameSpace:  envs["NAME_SPACE"],
@@ -79,11 +79,14 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, e
 	inkutil.LogWithGray("ChainAddr", initEnv.ChainAddr)
 
 	// 生成 本次部署 Key
+	// generrate pod key
 	podKey, priv, _, err := util.GenerateKeyPair(rand.Reader)
 	if err != nil {
 		return nil, errors.New("GenerateKeyPair: " + err.Error())
 	}
 
+	// 连接 TEE Worker Miner
+	// connect to worker
 	wChanel, workerReportBt, err := NewTEEClient(initEnv.WorkerAddr)
 	if err != nil {
 		return nil, errors.New("NewNewClient: " + err.Error())
@@ -131,26 +134,29 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, e
 	}
 
 	// 初始化区块链链接
-	c, err := chain.InitChain(initEnv.ChainAddr, podKey)
+	// initialize chain
+	chain, err := model.ConnectChain([]string{initEnv.ChainAddr})
 	if err != nil {
 		return nil, errors.New("Chain.InitChain: " + err.Error())
+	}
+	pod, err := chain.GetPod(initEnv.PodID)
+	if err != nil {
+		return nil, errors.New("GetPod: " + err.Error())
 	}
 
 	// 验证远程worker的证书
 	// Verify the worker tee report
 	_, err = fs.VerifyReport(workerReport)
 	if err != nil {
-		c.Close()
 		return nil, errors.New("VerifyReport: " + err.Error())
 	}
-	c.Close()
 
-	// init env
+	// 解析环境变量
+	// Parse environment variables
 	files := map[int]map[string]string{}
 	encrypts := map[int]map[string]uint64{}
 	json.Unmarshal([]byte(initEnv.Files), &files)
 	json.Unmarshal([]byte(initEnv.Encrypts), &encrypts)
-
 	ids := []uint64{}
 	for _, cencrypts := range encrypts {
 		for _, id := range cencrypts {
@@ -166,7 +172,7 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, e
 		Time: time.Now().Unix(),
 		Tx: &model.TeeCall_PodStart{
 			PodStart: &model.PodStart{
-				Id:        uint64(initEnv.PodID),
+				Id:        initEnv.PodID,
 				AppId:     []byte(initEnv.AppID),
 				NameSpace: ns,
 				PubKey:    podKey.Public(),
@@ -175,20 +181,22 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, e
 		},
 	}
 
-	// issue report of TEE CALL
+	// Issue report of TEE CALL
+	// 构建 TEE CALL 签名报告
 	err = fs.IssueReport(*podKey, podMint)
 	if err != nil {
 		return nil, errors.New("IssueReport: " + err.Error())
 	}
 
-	// encode msg
+	// 编码消息到protobuf
+	// Encode msg
 	buf := new(bytes.Buffer)
 	err = types.WriteMessage(podMint, buf)
 	if err != nil {
 		return nil, errors.New("WriteMessage: " + err.Error())
 	}
 
-	// 向集群请求机密
+	// 向区块链请求部署
 	// Request confidential
 	bt, err := wChanel.Invoke("/launch", buf.Bytes())
 	if err != nil {
@@ -203,10 +211,9 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, e
 		return nil, errors.New("ReadMessage: " + err.Error())
 	}
 
-	secretMap := map[uint64]string{}
-
 	// 将机密数据转换为环境变量
 	// Convert secret data to environment variables
+	secretMap := map[uint64]string{}
 	suite := suites.MustFind("Ed25519")
 	dkgPubKey := suite.Point()
 	dkgPubKey.UnmarshalBinary(secrets.DkgKey)
@@ -220,6 +227,7 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, e
 			encScrt.UnmarshalBinary(rawEncScrt)
 			encScrts[i] = encScrt
 		}
+
 		data, err := util.DecryptSecret(suite, encScrts, dkgPubKey, xncCmt, util.Ed25519Scalar(suite, priv))
 		if err != nil {
 			return nil, errors.New("DecryptSecret: " + err.Error())
@@ -268,9 +276,12 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, e
 		if err != nil {
 			return nil, errors.New("applySecrets: " + err.Error())
 		}
+
+		// Verify images / sgx version
 	} else {
 		// CVM 储存机密
 		// CVM Store secrets
+		Images = pod.Images
 	}
 
 	if isMain {
