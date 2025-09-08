@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -15,7 +14,6 @@ import (
 	"syscall"
 
 	"github.com/pkg/errors"
-	"github.com/wetee-dao/libos-entry/model"
 	"golang.org/x/sys/unix"
 )
 
@@ -33,10 +31,8 @@ func NewCryptLuks(devPath, keyFile, mappingID string) (*CryptLuks, error) {
 	if _, err := rand.Read(randSuffix[:]); err != nil {
 		return nil, errors.Wrap(err, "生成头部文件随机后缀失败")
 	}
-	metaPath := fmt.Sprintf("/dev/shm/crypt-mgr/luks-header-%x", randSuffix)
 	return &CryptLuks{
 		devPath:   devPath,
-		metaPath:  metaPath,
 		keyFile:   keyFile,
 		mappingID: mappingID,
 	}, nil
@@ -63,7 +59,7 @@ func (c *CryptLuks) CheckFormat(ctx context.Context) (bool, error) {
 func (c *CryptLuks) Format(ctx context.Context) error {
 	// 创建头部文件所在目录
 	if err := os.MkdirAll(filepath.Dir(c.metaPath), 0o700); err != nil {
-		return fmt.Errorf("创建头部文件目录 %s 失败: %w", filepath.Dir(c.metaPath), err)
+		return fmt.Errorf("create meta dir %s 失败: %w", filepath.Dir(c.metaPath), err)
 	}
 
 	// 构建cryptsetup命令参数
@@ -87,35 +83,15 @@ func (c *CryptLuks) Format(ctx context.Context) error {
 
 // Attach 激活LUKS设备（打开映射）
 func (c *CryptLuks) Attach(ctx context.Context) error {
-	// 备份头部信息
-	if err := c.backupMeta(ctx); err != nil {
-		return fmt.Errorf("备份LUKS头部信息失败: %w", err)
-	}
-
-	// 验证头部二进制格式
-	if err := c.validateBinaryMeta(); err != nil {
-		return fmt.Errorf("验证头部二进制格式失败: %w", err)
-	}
-
-	// 读取并验证头部元数据
-	header, err := c.loadMeta(ctx)
-	if err != nil {
-		return fmt.Errorf("解析头部信息失败: %w", err)
-	}
-	if err := c.validateMetaMeta(header); err != nil {
-		return fmt.Errorf("验证头部元数据失败: %w", err)
-	}
-
 	// 执行luksOpen命令
 	args := []string{
 		"luksOpen",
-		fmt.Sprintf("--header=%s", c.metaPath),
 		fmt.Sprintf("-d=%s", c.keyFile),
 		c.devPath,
 		c.mappingID,
 	}
 
-	if _, err = execCryptCommand(ctx, args...); err != nil {
+	if _, err := execCryptCommand(ctx, args...); err != nil {
 		return fmt.Errorf("激活设备映射 %s 失败: %w", c.mappingID, err)
 	}
 	return nil
@@ -125,135 +101,6 @@ func (c *CryptLuks) Attach(ctx context.Context) error {
 func (c *CryptLuks) Detach(ctx context.Context) error {
 	_, err := execCryptCommand(ctx, "luksClose", c.mappingID)
 	return err
-}
-
-// 备份LUKS头部信息到文件
-func (c *CryptLuks) backupMeta(ctx context.Context) error {
-	if err := os.MkdirAll(filepath.Dir(c.metaPath), 0o700); err != nil {
-		return fmt.Errorf("创建头部备份目录失败: %w", err)
-	}
-	_, err := execCryptCommand(ctx, "luksHeaderBackup", c.devPath, "--header-backup-file", c.metaPath)
-	return err
-}
-
-// 解析LUKS头部元数据
-func (c *CryptLuks) loadMeta(ctx context.Context) (model.CryptsetupMeta, error) {
-	args := []string{
-		"luksDump",
-		fmt.Sprintf("--header=%s", c.metaPath),
-		"--dump-json-metadata",
-		"/dev/null", // 占位参数
-	}
-
-	output, err := execCryptCommand(ctx, args...)
-	if err != nil {
-		return model.CryptsetupMeta{}, errors.Wrap(err, "导出头部元数据失败")
-	}
-
-	var meta model.CryptsetupMeta
-	decoder := json.NewDecoder(strings.NewReader(output))
-	decoder.DisallowUnknownFields() // 严格解析（禁止未知字段）
-	if err := decoder.Decode(&meta); err != nil {
-		return model.CryptsetupMeta{}, errors.Wrap(err, "解析头部JSON失败")
-	}
-	return meta, nil
-}
-
-// 验证头部二进制格式
-func (c *CryptLuks) validateBinaryMeta() error {
-	file, err := os.OpenFile(c.metaPath, os.O_RDONLY, 0)
-	if err != nil {
-		return errors.Wrap(err, "打开头部文件失败")
-	}
-	defer file.Close()
-
-	// 验证魔术字（LUKS标识）
-	magic := make([]byte, 6)
-	if _, err := file.Read(magic); err != nil {
-		return errors.Wrap(err, "读取魔术字失败")
-	}
-	if string(magic) != "LUKS\xba\xbe" {
-		return fmt.Errorf("无效的LUKS魔术字: 预期'LUKS\xba\xbe', 实际'%s'", string(magic))
-	}
-
-	// 验证版本（必须为LUKS2）
-	versionBytes := make([]byte, 2)
-	if _, err := file.Read(versionBytes); err != nil {
-		return fmt.Errorf("读取版本号失败: %w", err)
-	}
-	version := binary.BigEndian.Uint16(versionBytes)
-	if version != 2 {
-		return fmt.Errorf("不支持的LUKS版本: 预期2, 实际%d", version)
-	}
-
-	return nil
-}
-
-// 验证头部元数据内容
-func (c *CryptLuks) validateMetaMeta(meta model.CryptsetupMeta) error {
-	// 验证密钥槽
-	if len(meta.KeySlots) != 1 {
-		return fmt.Errorf("密钥槽数量错误: 预期1, 实际%d", len(meta.KeySlots))
-	}
-	keySlot, ok := meta.KeySlots["0"]
-	if !ok {
-		return errors.New("未找到密钥槽'0'")
-	}
-
-	// 密钥槽基本验证
-	if keySlot.Type != "luks2" {
-		return fmt.Errorf("密钥槽类型错误: 预期'luks2', 实际'%s'", keySlot.Type)
-	}
-	if keySlot.KeySize != 96 { // 64字节AES密钥 + 32字节HMAC密钥
-		return fmt.Errorf("密钥大小错误: 预期96, 实际%d", keySlot.KeySize)
-	}
-
-	// 加密区域验证
-	if keySlot.Area.Type != "raw" {
-		return fmt.Errorf("加密区域类型错误: 预期'raw', 实际'%s'", keySlot.Area.Type)
-	}
-	if keySlot.Area.Encryption != "aes-xts-plain64" {
-		return fmt.Errorf("加密算法错误: 预期'aes-xts-plain64', 实际'%s'", keySlot.Area.Encryption)
-	}
-
-	// KDF验证
-	if keySlot.KDF.Type != "argon2id" {
-		return fmt.Errorf("KDF类型错误: 预期'argon2id', 实际'%s'", keySlot.KDF.Type)
-	}
-	if keySlot.KDF.Salt == "" {
-		return errors.New("KDF盐值为空")
-	}
-
-	// 段信息验证
-	if len(meta.Segments) != 1 {
-		return fmt.Errorf("段数量错误: 预期1, 实际%d", len(meta.Segments))
-	}
-	segment, ok := meta.Segments["0"]
-	if !ok {
-		return errors.New("未找到段'0'")
-	}
-	if segment.Encryption != "aes-xts-plain64" {
-		return fmt.Errorf("段加密算法错误: 预期'aes-xts-plain64', 实际'%s'", segment.Encryption)
-	}
-
-	// 完整性验证
-	if segment.Integrity.Type != "hmac(sha256)" {
-		return fmt.Errorf("完整性算法错误: 预期'hmac(sha256)', 实际'%s'", segment.Integrity.Type)
-	}
-
-	// 摘要信息验证
-	if len(meta.Digests) != 1 {
-		return fmt.Errorf("摘要数量错误: 预期1, 实际%d", len(meta.Digests))
-	}
-	digest, ok := meta.Digests["0"]
-	if !ok {
-		return errors.New("未找到摘要'0'")
-	}
-	if digest.Hash != "sha256" {
-		return fmt.Errorf("摘要哈希算法错误: 预期'sha256', 实际'%s'", digest.Hash)
-	}
-
-	return nil
 }
 
 // CheckExt4Format 检查设备是否为ext4格式
