@@ -19,22 +19,22 @@ import (
 
 // CryptLuks 表示一个加密设备，用于LUKS加密管理
 type CryptLuks struct {
-	devPath   string // 物理设备路径
-	metaPath  string // 头部信息备份文件路径
-	keyFile   string // 密钥文件路径
-	mappingID string // 设备映射名称
+	devPath  string // 物理设备路径
+	metaPath string // 头部信息备份文件路径
+	keyFile  string // 密钥文件路径
+	secretId string // 设备映射名称
 }
 
 // NewCryptLuks 创建CryptLuks实例（不与实际设备交互）
-func NewCryptLuks(devPath, keyFile, mappingID string) (*CryptLuks, error) {
+func NewCryptLuks(devPath, keyFile, secretId string) (*CryptLuks, error) {
 	var randSuffix [4]byte
 	if _, err := rand.Read(randSuffix[:]); err != nil {
 		return nil, errors.Wrap(err, "生成头部文件随机后缀失败")
 	}
 	return &CryptLuks{
-		devPath:   devPath,
-		keyFile:   keyFile,
-		mappingID: mappingID,
+		devPath:  devPath,
+		keyFile:  keyFile,
+		secretId: secretId,
 	}, nil
 }
 
@@ -88,18 +88,21 @@ func (c *CryptLuks) Attach(ctx context.Context) error {
 		"luksOpen",
 		fmt.Sprintf("-d=%s", c.keyFile),
 		c.devPath,
-		c.mappingID,
+		c.secretId,
 	}
 
 	if _, err := execCryptCommand(ctx, args...); err != nil {
-		return fmt.Errorf("激活设备映射 %s 失败: %w", c.mappingID, err)
+		if strings.Contains(err.Error(), "already exists") {
+			return nil
+		}
+		return fmt.Errorf("Attach %s error: %w", c.secretId, err)
 	}
 	return nil
 }
 
 // Detach 关闭LUKS设备映射
 func (c *CryptLuks) Detach(ctx context.Context) error {
-	_, err := execCryptCommand(ctx, "luksClose", c.mappingID)
+	_, err := execCryptCommand(ctx, "luksClose", c.secretId)
 	return err
 }
 
@@ -110,7 +113,7 @@ func (c *CryptLuks) CheckExt4Format(_ context.Context) (bool, error) {
 		magicOffset = 1080           // 魔术字在超级块中的偏移量
 	)
 
-	mappingPath := filepath.Join("/dev/mapper", c.mappingID)
+	mappingPath := filepath.Join("/dev/mapper", c.secretId)
 	file, err := os.Open(mappingPath)
 	if err != nil {
 		return false, fmt.Errorf("打开映射设备失败: %w", err)
@@ -137,7 +140,7 @@ func (c *CryptLuks) CheckExt4Format(_ context.Context) (bool, error) {
 
 // CreateExt4 格式化设备为ext4文件系统
 func (c *CryptLuks) FormatExt4(ctx context.Context) error {
-	mappingPath := filepath.Join("/dev/mapper", c.mappingID)
+	mappingPath := filepath.Join("/dev/mapper", c.secretId)
 
 	// 擦除 ext4 超级块备份区域
 	if err := clearExt4Blocks(ctx, mappingPath); err != nil {
@@ -157,8 +160,8 @@ func execCryptCommand(ctx context.Context, args ...string) (string, error) {
 		return "", errors.Wrap(err, "create cryptsetup run dir error")
 	}
 
-	fmt.Println("cryptsetup", args)
-	cmd := exec.CommandContext(ctx, "cryptsetup", args...)
+	// fmt.Println("cryptsetup", args)
+	cmd := exec.CommandContext(ctx, "/usr/sbin/cryptsetup", args...)
 	output, err := cmd.Output()
 	var exitErr *exec.ExitError
 	if errors.As(err, &exitErr) {
