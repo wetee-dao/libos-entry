@@ -1,40 +1,45 @@
 {
- "exe": "hello",
- "key": "keys/private.pem",
- "debug": true,
- "heapSize": 500,
- "executableHeap": false,
- "productID": 1,
- "securityVersion": 1,
- "env": [
-    {
-        "name": "APPID",
-        "fromHost": true
-    },
-    {
-        "name": "PODID",
-        "fromHost": true
-    },
-    {
-        "name": "__FILES__",
-        "fromHost": true
-    },
-    {
-        "name": "__ENCRYPTS__",
-        "fromHost": true
-    },
-    {
-        "name": "NAME_SPACE",
-        "fromHost": true
-    },
-    {
-        "name": "WORKER_ADDR",
-        "fromHost": true
-    },
-    {
-        "name": "CHAIN_ADDR",
-        "fromHost": true
-    } 
- ],
- "files": null
+    "exe": "hello",
+    "key": "keys/private.pem",
+    "debug": true,
+    "heapSize": 500,
+    "executableHeap": false,
+    "productID": 1,
+    "securityVersion": 1,
+    "env": [
+        {
+            "name": "APPID",
+            "fromHost": true
+        },
+        {
+            "name": "PODID",
+            "fromHost": true
+        },
+        {
+            "name": "__FILES__",
+            "fromHost": true
+        },
+        {
+            "name": "__ENCRYPTS__",
+            "fromHost": true
+        },
+        {
+            "name": "NAME_SPACE",
+            "fromHost": true
+        },
+        {
+            "name": "WORKER_ADDR",
+            "fromHost": true
+        },
+        {
+            "name": "CHAIN_ADDR",
+            "fromHost": true
+        }
+    ],
+    "files": [
+        {
+            "source": "/etc/ssl/certs/ca-certificates.crt",
+            "target": "/etc/ssl/certs/ca-certificates.crt"
+        }
+    ]
 }

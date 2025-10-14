@@ -17,11 +17,10 @@ func TestImpl(t *testing.T) {
 		"NAME_SPACE":   "9621dde636de098b43efb0fa9b61facfe328f99d",
 		"__FILES__":    "{\"0\":{\"K2\":\"4b33\"}}",
 		"__ENCRYPTS__": "{\"0\":{\"K2\":0}}",
+		"__DISKS__":    "{}",
 	}
 	bt, _ := json.Marshal(m)
 
 	resp := s.start(&CrossRequest{env: bt})
 	fmt.Println(string(resp.data))
 }
-
-// {"0":{"Envs":{"K2":"4b33"},"Files":{}}}

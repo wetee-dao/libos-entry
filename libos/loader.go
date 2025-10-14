@@ -24,6 +24,7 @@ type InitEnv struct {
 	PodID      uint64
 	Files      string
 	Encrypts   string
+	Disks      string
 	NameSpace  string
 	WorkerAddr string
 	ChainAddr  string
@@ -38,6 +39,7 @@ func PreLoad(fs util.Fs, isMain bool) (map[int]*util.Secrets, error) {
 	PodID := util.GetEnvU64("PODID", 0)
 	Files := util.GetEnv("__FILES__", "{}")
 	Encrypts := util.GetEnv("__ENCRYPTS__", "{}")
+	Disks := util.GetEnv("__DISKS__", "{}")
 	NameSpace := util.GetEnv("NAME_SPACE", "")
 	WorkerAddr := util.GetEnv("WORKER_ADDR", DefaultWorkAddr)
 	ChainAddr := util.GetEnv("CHAIN_ADDR", DefaultChainUrl)
@@ -47,6 +49,7 @@ func PreLoad(fs util.Fs, isMain bool) (map[int]*util.Secrets, error) {
 		PodID:      PodID,
 		Files:      Files,
 		Encrypts:   Encrypts,
+		Disks:      Disks,
 		NameSpace:  NameSpace,
 		WorkerAddr: WorkerAddr,
 		ChainAddr:  ChainAddr,
@@ -66,6 +69,7 @@ func PreLoadFromInitData(fs util.Fs, envs map[string]string, isMain bool) (map[i
 		PodID:      i,
 		Files:      envs["__FILES__"],
 		Encrypts:   envs["__ENCRYPTS__"],
+		Disks:      envs["__DISKS__"],
 		NameSpace:  envs["NAME_SPACE"],
 		WorkerAddr: envs["WORKER_ADDR"],
 		ChainAddr:  envs["CHAIN_ADDR"],
@@ -148,16 +152,30 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, e
 	// init env
 	files := map[int]map[string]string{}
 	encrypts := map[int]map[string]uint64{}
+	disks := map[int]map[string]uint64{}
 	json.Unmarshal([]byte(initEnv.Files), &files)
 	json.Unmarshal([]byte(initEnv.Encrypts), &encrypts)
+	json.Unmarshal([]byte(initEnv.Disks), &disks)
 
-	ids := []uint64{}
-	for _, cencrypts := range encrypts {
-		for _, id := range cencrypts {
-			ids = append(ids, id)
+	// 解析秘密数据
+	// parse secret
+	secretIds := []uint64{}
+	for _, containerEncrypts := range encrypts {
+		for _, id := range containerEncrypts {
+			secretIds = append(secretIds, id)
 		}
 	}
-	ids = util.Distinct(ids)
+	secretIds = util.Distinct(secretIds)
+
+	// 解析硬盘
+	// parse disk
+	diskIds := []uint64{}
+	for _, containerDisks := range disks {
+		for _, id := range containerDisks {
+			diskIds = append(diskIds, id)
+		}
+	}
+	diskIds = util.Distinct(diskIds)
 
 	// 构建签名证明自己在集群中的身份
 	// Build the signature to prove your identity in the cluster
@@ -170,7 +188,8 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, e
 				AppId:     []byte(initEnv.AppID),
 				NameSpace: ns,
 				PubKey:    podKey.Public(),
-				Indexs:    ids,
+				Secrets:   secretIds,
+				Disks:     diskIds,
 			},
 		},
 	}
@@ -203,14 +222,14 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, e
 		return nil, errors.New("ReadMessage: " + err.Error())
 	}
 
-	secretMap := map[uint64]string{}
-
 	// 将机密数据转换为环境变量
 	// Convert secret data to environment variables
 	suite := suites.MustFind("Ed25519")
 	dkgPubKey := suite.Point()
 	dkgPubKey.UnmarshalBinary(secrets.DkgKey)
-	for id, secret := range secrets.Lists {
+
+	secretMap := map[uint64]string{}
+	for id, secret := range secrets.Secrets {
 		rawXncCmt := secret.XncCmt
 		xncCmt := suite.Point()
 		xncCmt.UnmarshalBinary(rawXncCmt)
@@ -226,6 +245,25 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, e
 		}
 
 		secretMap[id] = string(data)
+	}
+
+	disKeysMap := map[uint64][]byte{}
+	for id, disk := range secrets.DiskKeys {
+		rawXncCmt := disk.XncCmt
+		xncCmt := suite.Point()
+		xncCmt.UnmarshalBinary(rawXncCmt)
+		encScrts := make([]kyber.Point, len(disk.EncScrt))
+		for i, rawEncScrt := range disk.EncScrt {
+			encScrt := suite.Point()
+			encScrt.UnmarshalBinary(rawEncScrt)
+			encScrts[i] = encScrt
+		}
+		data, err := util.DecryptSecret(suite, encScrts, dkgPubKey, xncCmt, util.Ed25519Scalar(suite, priv))
+		if err != nil {
+			return nil, errors.New("DecryptSecret: " + err.Error())
+		}
+
+		disKeysMap[id] = data
 	}
 
 	// 解析机密
@@ -262,11 +300,13 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, e
 	}
 
 	if podMint.TeeType == 0 {
-		// SGX 部署机密到运行环境
-		// SGX Deploy secrets to the runtime environment
-		err = applySecrets(secretEnv[0], fs)
-		if err != nil {
-			return nil, errors.New("applySecrets: " + err.Error())
+		if len(secretEnv) > 0 {
+			// SGX 部署机密到运行环境
+			// SGX Deploy secrets to the runtime environment
+			err = applySecrets(secretEnv[0], fs)
+			if err != nil {
+				return nil, errors.New("applySecrets: " + err.Error())
+			}
 		}
 	} else {
 		// CVM 储存机密
