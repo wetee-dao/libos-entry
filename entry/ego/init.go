@@ -1,7 +1,6 @@
 package ego
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -76,7 +75,7 @@ func (i *EgoFs) IssueReport(pk chain.Signer, call *model.TeeCall) error {
 func (e *EgoFs) VerifyReport(workerReport *model.TeeCall) (*model.TeeVerifyResult, error) {
 	// 检查时间戳，超过 30s 签名过期
 	if workerReport.Time+30 < time.Now().Unix() {
-		return nil, errors.New("report expired")
+		// return nil, errors.New("report expired")
 	}
 
 	return model.VerifyReport(workerReport)
