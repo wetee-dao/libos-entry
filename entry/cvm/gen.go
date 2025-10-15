@@ -42,7 +42,7 @@ var TEEServerImpl TEEServer
 
 type TEEServer interface {
 	start(req *CrossRequest) CrossResponse
-	secret_mount(major *int64, minor *int64, mount_path *string) CrossResponse
+	secret_mount(major *int64, minor *int64, mount_path *string, container_id *uint64) CrossResponse
 	stop(t *int64) CrossResponse
 }
 
@@ -60,12 +60,13 @@ func CTEEServer_start(req C.CrossRequestRef, slot *C.void, cb *C.void) {
 }
 
 //export CTEEServer_secret_mount
-func CTEEServer_secret_mount(major C.int64_t, minor C.int64_t, mount_path C.StringRef, slot *C.void, cb *C.void) {
+func CTEEServer_secret_mount(major C.int64_t, minor C.int64_t, mount_path C.StringRef, container_id C.uint64_t, slot *C.void, cb *C.void) {
 	_new_major := newC_int64_t(major)
 	_new_minor := newC_int64_t(minor)
 	_new_mount_path := newString(mount_path)
+	_new_container_id := newC_uint64_t(container_id)
 	go func() {
-		resp := TEEServerImpl.secret_mount(&_new_major, &_new_minor, &_new_mount_path)
+		resp := TEEServerImpl.secret_mount(&_new_major, &_new_minor, &_new_mount_path, &_new_container_id)
 		resp_ref, buffer := cvt_ref(cntCrossResponse, refCrossResponse)(&resp)
 		asmcall.CallFuncG0P2(unsafe.Pointer(cb), unsafe.Pointer(&resp_ref), unsafe.Pointer(slot))
 		runtime.KeepAlive(resp_ref)

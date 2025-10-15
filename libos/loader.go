@@ -29,10 +29,15 @@ type InitEnv struct {
 	ChainAddr  string
 }
 
+type Disk struct {
+	Id  uint64
+	Key []byte
+}
+
 var DefaultChainUrl string = "ws://192.168.111.105:9944"
 var DefaultWorkAddr string = "wetee-worker.worker-system.svc.cluster.local:8883"
 var Images []string = []string{}
-var DiskKeys = map[uint64][]byte{}
+var DiskKeys = map[int]map[string]Disk{}
 
 func PreLoad(fs util.Fs, isMain bool) (map[int]*util.Secrets, error) {
 	// 读取环境变量
@@ -259,7 +264,7 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, e
 	}
 
 	// 读取机密数据中的 disk key
-	DiskKeys = map[uint64][]byte{}
+	diskKeys := map[uint64][]byte{}
 	for id, disk := range secrets.DiskKeys {
 		rawXncCmt := disk.XncCmt
 		xncCmt := suite.Point()
@@ -275,27 +280,27 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, e
 			return nil, errors.New("DecryptSecret: " + err.Error())
 		}
 
-		DiskKeys[id] = data
+		diskKeys[id] = data
 	}
 
 	// 解析机密
 	// Parse the secret
 	secretEnv := map[int]*util.Secrets{}
-	for index, cencrypts := range encrypts {
+	for index, contanerEncrypts := range encrypts {
 		if secretEnv[index] == nil {
 			secretEnv[index] = &util.Secrets{
 				Envs:  map[string]string{},
 				Files: map[string][]byte{},
 			}
 		}
-		for k, id := range cencrypts {
+		for k, id := range contanerEncrypts {
 			secretEnv[index].Envs[k] = secretMap[id]
 		}
 	}
 
 	// 保存文件
 	// Save the file
-	for index, cfiles := range files {
+	for index, contanerFiles := range files {
 		if secretEnv[index] == nil {
 			secretEnv[index] = &util.Secrets{
 				Envs:  map[string]string{},
@@ -303,7 +308,7 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, e
 			}
 		}
 
-		for path, value := range cfiles {
+		for path, value := range contanerFiles {
 			bt, err := hex.DecodeString(value)
 			if err == nil {
 				secretEnv[index].Files[path] = bt
@@ -311,7 +316,22 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, e
 		}
 	}
 
-	if podMint.TeeType == 0 {
+	// 保存 disk key
+	for index, contanerDisk := range disks {
+		if DiskKeys[index] == nil {
+			DiskKeys[index] = map[string]Disk{}
+		}
+
+		for path, id := range contanerDisk {
+			DiskKeys[index][path] = Disk{
+				Id:  id,
+				Key: diskKeys[id],
+			}
+		}
+	}
+
+	switch podMint.TeeType {
+	case 0:
 		if len(secretEnv) > 0 {
 			// SGX 部署机密到运行环境
 			// SGX Deploy secrets to the runtime environment
@@ -320,9 +340,8 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, e
 				return nil, errors.New("applySecrets: " + err.Error())
 			}
 		}
-
 		// Verify images / sgx version
-	} else {
+	case 1:
 		// CVM 储存机密
 		// CVM Store secrets
 		Images = pod.Images
