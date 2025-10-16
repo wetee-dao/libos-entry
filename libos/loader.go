@@ -6,7 +6,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/cometbft/cometbft/abci/types"
@@ -145,7 +147,7 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, e
 
 	// 初始化区块链链接
 	// initialize chain
-	chain, err := model.ConnectChain([]string{initEnv.ChainAddr})
+	chain, err := model.ConnectChain(strings.Split(initEnv.ChainAddr, ","))
 	if err != nil {
 		return nil, errors.New("Chain.InitChain: " + err.Error())
 	}
@@ -329,6 +331,9 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, e
 			}
 		}
 	}
+
+	fmt.Println("-------------------------------------------")
+	model.PrintJson(DiskKeys)
 
 	switch podMint.TeeType {
 	case 0:

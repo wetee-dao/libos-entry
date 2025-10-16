@@ -20,6 +20,10 @@
             "fromHost": true
         },
         {
+            "name": "__DISKS__",
+            "fromHost": true
+        },
+        {
             "name": "__ENCRYPTS__",
             "fromHost": true
         },
