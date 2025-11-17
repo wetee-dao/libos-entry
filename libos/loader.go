@@ -29,6 +29,7 @@ type InitEnv struct {
 	NameSpace  string
 	WorkerAddr string
 	ChainAddr  string
+	Params     map[string]string
 }
 
 type Disk struct {
@@ -51,6 +52,10 @@ func PreLoad(fs util.Fs, isMain bool) (map[int]*util.Secrets, error) {
 	NameSpace := util.GetEnv("NAME_SPACE", "")
 	WorkerAddr := util.GetEnv("WORKER_ADDR", DefaultWorkAddr)
 	ChainAddr := util.GetEnv("CHAIN_ADDR", DefaultChainUrl)
+	ParamsStr := util.GetEnv("__PARAMS__", "{}")
+
+	Params := map[string]string{}
+	json.Unmarshal([]byte(ParamsStr), &Params)
 
 	initEnv := InitEnv{
 		AppID:      AppID,
@@ -61,6 +66,7 @@ func PreLoad(fs util.Fs, isMain bool) (map[int]*util.Secrets, error) {
 		NameSpace:  NameSpace,
 		WorkerAddr: WorkerAddr,
 		ChainAddr:  ChainAddr,
+		Params:     Params,
 	}
 	return preLoad(fs, isMain, initEnv)
 }
@@ -72,6 +78,9 @@ func PreLoadFromInitData(fs util.Fs, envs map[string]string, isMain bool) (map[i
 		return nil, err
 	}
 
+	Params := map[string]string{}
+	json.Unmarshal([]byte(envs["__PARAMS__"]), &Params)
+
 	initEnv := InitEnv{
 		AppID:      envs["APPID"],
 		PodID:      id,
@@ -81,6 +90,7 @@ func PreLoadFromInitData(fs util.Fs, envs map[string]string, isMain bool) (map[i
 		NameSpace:  envs["NAME_SPACE"],
 		WorkerAddr: envs["WORKER_ADDR"],
 		ChainAddr:  envs["CHAIN_ADDR"],
+		Params:     Params,
 	}
 
 	return preLoad(fs, isMain, initEnv)
@@ -101,7 +111,7 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, e
 	// connect to worker
 	wChanel, workerReportBt, err := NewTEEClient(initEnv.WorkerAddr)
 	if err != nil {
-		return nil, errors.New("NewNewClient: " + err.Error())
+		return nil, errors.New("NewClient: " + err.Error())
 	}
 
 	go wChanel.Start()
@@ -145,9 +155,16 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, e
 		return nil, errors.New("Read Report Message: " + err.Error())
 	}
 
+	// check cloud contract address
+	if v, ok := initEnv.Params["polkadot_cloud_addr"]; !ok || v == "" {
+		return nil, errors.New("cloud contract miss")
+	}
+
 	// 初始化区块链链接
 	// initialize chain
-	chain, err := model.ConnectChain(strings.Split(initEnv.ChainAddr, ","))
+	chain, err := model.ConnectChain(strings.Split(initEnv.ChainAddr, ","), map[string]string{
+		"cloud_addr": initEnv.Params["polkadot_cloud_addr"],
+	})
 	if err != nil {
 		return nil, errors.New("Chain.InitChain: " + err.Error())
 	}
@@ -334,6 +351,7 @@ func preLoad(fs util.Fs, isMain bool, initEnv InitEnv) (map[int]*util.Secrets, e
 
 	fmt.Println("-------------------------------------------")
 	model.PrintJson(DiskKeys)
+	model.PrintJson(secretEnv)
 
 	switch podMint.TeeType {
 	case 0:

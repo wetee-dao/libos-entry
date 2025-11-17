@@ -11,14 +11,14 @@ type Chain interface {
 	GetPod(id uint64) (*chainTypes.Pod, error)
 }
 
-func ConnectChain(url []string) (Chain, error) {
+func ConnectChain(url []string, params map[string]string) (Chain, error) {
 	pk, err := ink.Sr25519PairFromSecret("//Alice", 42)
 	if err != nil {
 		util.LogWithPurple("Sr25519PairFromSecret", err)
 		panic(err)
 	}
 
-	c, err := polkadot.NewContract(url, &pk)
+	c, err := polkadot.NewContract(url, &pk, params)
 	if err != nil {
 		return nil, err
 	}

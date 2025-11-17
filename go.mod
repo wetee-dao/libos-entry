@@ -15,7 +15,7 @@ require (
 	github.com/ihciah/rust2go v0.0.0-20250726175549-557d7a3a4e27
 	github.com/spf13/afero v1.11.0
 	github.com/vedhavyas/go-subkey/v2 v2.0.0
-	github.com/wetee-dao/ink.go v0.1.30
+	github.com/wetee-dao/ink.go v0.1.33
 	go.dedis.ch/kyber/v4 v4.0.0-pre2.0.20250414164612-66d4dee8d2e6
 	golang.org/x/sys v0.33.0
 )
@@ -76,3 +76,5 @@ require (
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/wetee-dao/ink.go => ../ink.go

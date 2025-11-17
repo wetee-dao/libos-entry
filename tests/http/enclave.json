@@ -28,6 +28,10 @@
             "fromHost": true
         },
         {
+            "name": "__PARAMS__",
+            "fromHost": true
+        },
+        {
             "name": "NAME_SPACE",
             "fromHost": true
         },

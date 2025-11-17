@@ -17,15 +17,13 @@ type Contract struct {
 	cloud  *cloud.Cloud
 }
 
-const cloudAddress = "0x72381a1a0c2858fa134b89b72b054bcb51f80a6a"
-
-func NewContract(url []string, pk *ink.Signer) (*Contract, error) {
+func NewContract(url []string, pk *ink.Signer, params map[string]string) (*Contract, error) {
 	client, err := ink.InitClient(url, false)
 	if err != nil {
 		return nil, err
 	}
 
-	cloud, err := cloud.InitCloudContract(client, cloudAddress)
+	cloud, err := cloud.InitCloudContract(client, params["cloud_addr"])
 	if err != nil {
 		util.LogWithPurple("InitCloudContract", err)
 		return nil, err
