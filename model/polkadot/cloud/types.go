@@ -252,47 +252,10 @@ func (ty *Service) Decode(decoder scale.Decoder) (err error) {
 	}
 }
 
-type Disk struct { // Composite
-	Path DiskClass
-	Size uint32
+type ContainerDisk struct { // Composite
+	Id   uint64
+	Path []byte
 }
-type DiskClass struct { // Enum
-	SSD *[]byte // 0
-}
-
-func (ty DiskClass) Encode(encoder scale.Encoder) (err error) {
-	if ty.SSD != nil {
-		err = encoder.PushByte(0)
-		if err != nil {
-			return err
-		}
-		err = encoder.Encode(*ty.SSD)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-	return fmt.Errorf("unrecognized enum")
-}
-
-func (ty *DiskClass) Decode(decoder scale.Decoder) (err error) {
-	variant, err := decoder.ReadOneByte()
-	if err != nil {
-		return err
-	}
-	switch variant {
-	case 0: // Inline
-		ty.SSD = new([]byte)
-		err = decoder.Decode(ty.SSD)
-		if err != nil {
-			return err
-		}
-		return
-	default:
-		return fmt.Errorf("unrecognized enum")
-	}
-}
-
 type Env struct { // Enum
 	Env *struct { // 0
 		F0 []byte
@@ -434,7 +397,10 @@ type Container struct { // Composite
 	Image   []byte
 	Command Command
 	Port    []Service
-	Cr      CR
+	Cpu     uint32
+	Mem     uint32
+	Disk    []ContainerDisk
+	Gpu     uint32
 	Env     []Env
 }
 type Command struct { // Enum
@@ -527,16 +493,80 @@ func (ty *Command) Decode(decoder scale.Decoder) (err error) {
 	}
 }
 
-type CR struct { // Composite
-	Cpu  uint32
-	Mem  uint32
-	Disk []Disk
-	Gpu  uint32
-}
 type Secret struct { // Composite
-	Name []byte
-	Hash util.Option[types.H256]
+	K      []byte
+	Hash   types.H256
+	Minted bool
 }
+type Disk struct { // Enum
+	SecretSSD *struct { // 0
+		F0 []byte
+		F1 []byte
+		F2 uint32
+	}
+}
+
+func (ty Disk) Encode(encoder scale.Encoder) (err error) {
+	if ty.SecretSSD != nil {
+		err = encoder.PushByte(0)
+		if err != nil {
+			return err
+		}
+
+		err = encoder.Encode(ty.SecretSSD.F0)
+		if err != nil {
+			return err
+		}
+
+		err = encoder.Encode(ty.SecretSSD.F1)
+		if err != nil {
+			return err
+		}
+
+		err = encoder.Encode(ty.SecretSSD.F2)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+	return fmt.Errorf("unrecognized enum")
+}
+
+func (ty *Disk) Decode(decoder scale.Decoder) (err error) {
+	variant, err := decoder.ReadOneByte()
+	if err != nil {
+		return err
+	}
+	switch variant {
+	case 0: // Tuple
+		ty.SecretSSD = &struct {
+			F0 []byte
+			F1 []byte
+			F2 uint32
+		}{}
+
+		err = decoder.Decode(&ty.SecretSSD.F0)
+		if err != nil {
+			return err
+		}
+
+		err = decoder.Decode(&ty.SecretSSD.F1)
+		if err != nil {
+			return err
+		}
+
+		err = decoder.Decode(&ty.SecretSSD.F2)
+		if err != nil {
+			return err
+		}
+
+		return
+	default:
+		return fmt.Errorf("unrecognized enum")
+	}
+}
+
 type Error struct { // Enum
 	SetCodeFailed          *bool // 0
 	MustCallByGovContract  *bool // 1
@@ -817,36 +847,72 @@ func (ty *EditType) Decode(decoder scale.Decoder) (err error) {
 	}
 }
 
-type Tuple_106 struct { // Tuple
+type Tuple_115 struct { // Tuple
 	F0 uint64
 	F1 Pod
-	F2 []Tuple_108
+	F2 []Tuple_117
+	F3 byte
 }
-type Tuple_108 struct { // Tuple
+type Tuple_117 struct { // Tuple
 	F0 uint64
 	F1 Container
 }
-type Tuple_112 struct { // Tuple
+type Tuple_121 struct { // Tuple
 	F0 uint64
 	F1 uint32
 	F2 uint32
 	F3 byte
 }
-type Tuple_115 struct { // Tuple
+type Tuple_124 struct { // Tuple
 	F0 Pod
-	F1 []Tuple_108
+	F1 []Tuple_117
 	F2 uint32
 	F3 byte
 }
-type Tuple_119 struct { // Tuple
+type Tuple_127 struct { // Tuple
+	F0 uint64
+	F1 K8sCluster
+	F2 []byte
+}
+type K8sCluster struct { // Composite
+	Name          []byte
+	Owner         types.H160
+	Level         byte
+	RegionId      uint32
+	StartBlock    uint32
+	StopBlock     util.Option[uint32]
+	TerminalBlock util.Option[uint32]
+	P2pId         util.AccountId
+	Ip            Ip
+	Port          uint32
+	Status        byte
+}
+type Ip struct { // Composite
+	Ipv4   util.Option[uint32]
+	Ipv6   util.Option[types.U128]
+	Domain util.Option[[]byte]
+}
+type Tuple_135 struct { // Tuple
 	F0 uint64
 	F1 Pod
-	F2 []Tuple_108
+	F2 []Tuple_137
 	F3 uint32
 	F4 uint32
 	F5 byte
 }
-type Tuple_122 struct { // Tuple
+type Tuple_137 struct { // Tuple
+	F0 uint64
+	F1 Tuple_138
+}
+type Tuple_138 struct { // Tuple
+	F0 Container
+	F1 []util.Option[Disk]
+}
+type Tuple_143 struct { // Tuple
 	F0 uint64
 	F1 Secret
+}
+type Tuple_151 struct { // Tuple
+	F0 uint64
+	F1 Disk
 }
