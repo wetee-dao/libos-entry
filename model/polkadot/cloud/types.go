@@ -8,14 +8,408 @@ import (
 	"github.com/wetee-dao/ink.go/util"
 )
 
-type Pod struct { // Composite
-	Name       []byte
-	Owner      types.H160
-	Contract   types.H160
-	Ptype      PodType
-	StartBlock uint32
-	TeeType    TEEType
+type Error struct { // Enum
+	SetCodeFailed          *bool // 0
+	MustCallByGovContract  *bool // 1
+	WorkerLevelNotEnough   *bool // 2
+	RegionNotMatch         *bool // 3
+	WorkerNotOnline        *bool // 4
+	NotPodOwner            *bool // 5
+	PodKeyNotExist         *bool // 6
+	PodStatusError         *bool // 7
+	InvalidSideChainCaller *bool // 8
+	DelFailed              *bool // 9
+	NotFound               *bool // 10
+	PodNotFound            *bool // 11
+	WorkerIdNotFound       *bool // 12
+	WorkerNotFound         *bool // 13
+	LevelPriceNotFound     *bool // 14
+	AssetNotFound          *bool // 15
+	BalanceNotEnough       *bool // 16
+	PayFailed              *bool // 17
 }
+
+func (ty Error) Encode(encoder scale.Encoder) (err error) {
+	if ty.SetCodeFailed != nil {
+		err = encoder.PushByte(0)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if ty.MustCallByGovContract != nil {
+		err = encoder.PushByte(1)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if ty.WorkerLevelNotEnough != nil {
+		err = encoder.PushByte(2)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if ty.RegionNotMatch != nil {
+		err = encoder.PushByte(3)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if ty.WorkerNotOnline != nil {
+		err = encoder.PushByte(4)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if ty.NotPodOwner != nil {
+		err = encoder.PushByte(5)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if ty.PodKeyNotExist != nil {
+		err = encoder.PushByte(6)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if ty.PodStatusError != nil {
+		err = encoder.PushByte(7)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if ty.InvalidSideChainCaller != nil {
+		err = encoder.PushByte(8)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if ty.DelFailed != nil {
+		err = encoder.PushByte(9)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if ty.NotFound != nil {
+		err = encoder.PushByte(10)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if ty.PodNotFound != nil {
+		err = encoder.PushByte(11)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if ty.WorkerIdNotFound != nil {
+		err = encoder.PushByte(12)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if ty.WorkerNotFound != nil {
+		err = encoder.PushByte(13)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if ty.LevelPriceNotFound != nil {
+		err = encoder.PushByte(14)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if ty.AssetNotFound != nil {
+		err = encoder.PushByte(15)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if ty.BalanceNotEnough != nil {
+		err = encoder.PushByte(16)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if ty.PayFailed != nil {
+		err = encoder.PushByte(17)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	return fmt.Errorf("unrecognized enum")
+}
+
+func (ty *Error) Decode(decoder scale.Decoder) (err error) {
+	variant, err := decoder.ReadOneByte()
+	if err != nil {
+		return err
+	}
+	switch variant {
+	case 0: // Base
+		t := true
+		ty.SetCodeFailed = &t
+		return
+	case 1: // Base
+		t := true
+		ty.MustCallByGovContract = &t
+		return
+	case 2: // Base
+		t := true
+		ty.WorkerLevelNotEnough = &t
+		return
+	case 3: // Base
+		t := true
+		ty.RegionNotMatch = &t
+		return
+	case 4: // Base
+		t := true
+		ty.WorkerNotOnline = &t
+		return
+	case 5: // Base
+		t := true
+		ty.NotPodOwner = &t
+		return
+	case 6: // Base
+		t := true
+		ty.PodKeyNotExist = &t
+		return
+	case 7: // Base
+		t := true
+		ty.PodStatusError = &t
+		return
+	case 8: // Base
+		t := true
+		ty.InvalidSideChainCaller = &t
+		return
+	case 9: // Base
+		t := true
+		ty.DelFailed = &t
+		return
+	case 10: // Base
+		t := true
+		ty.NotFound = &t
+		return
+	case 11: // Base
+		t := true
+		ty.PodNotFound = &t
+		return
+	case 12: // Base
+		t := true
+		ty.WorkerIdNotFound = &t
+		return
+	case 13: // Base
+		t := true
+		ty.WorkerNotFound = &t
+		return
+	case 14: // Base
+		t := true
+		ty.LevelPriceNotFound = &t
+		return
+	case 15: // Base
+		t := true
+		ty.AssetNotFound = &t
+		return
+	case 16: // Base
+		t := true
+		ty.BalanceNotEnough = &t
+		return
+	case 17: // Base
+		t := true
+		ty.PayFailed = &t
+		return
+	default:
+		return fmt.Errorf("unrecognized enum")
+	}
+}
+func (ty *Error) Error() string {
+	if ty.SetCodeFailed != nil {
+		return "SetCodeFailed"
+	}
+
+	if ty.MustCallByGovContract != nil {
+		return "MustCallByGovContract"
+	}
+
+	if ty.WorkerLevelNotEnough != nil {
+		return "WorkerLevelNotEnough"
+	}
+
+	if ty.RegionNotMatch != nil {
+		return "RegionNotMatch"
+	}
+
+	if ty.WorkerNotOnline != nil {
+		return "WorkerNotOnline"
+	}
+
+	if ty.NotPodOwner != nil {
+		return "NotPodOwner"
+	}
+
+	if ty.PodKeyNotExist != nil {
+		return "PodKeyNotExist"
+	}
+
+	if ty.PodStatusError != nil {
+		return "PodStatusError"
+	}
+
+	if ty.InvalidSideChainCaller != nil {
+		return "InvalidSideChainCaller"
+	}
+
+	if ty.DelFailed != nil {
+		return "DelFailed"
+	}
+
+	if ty.NotFound != nil {
+		return "NotFound"
+	}
+
+	if ty.PodNotFound != nil {
+		return "PodNotFound"
+	}
+
+	if ty.WorkerIdNotFound != nil {
+		return "WorkerIdNotFound"
+	}
+
+	if ty.WorkerNotFound != nil {
+		return "WorkerNotFound"
+	}
+
+	if ty.LevelPriceNotFound != nil {
+		return "LevelPriceNotFound"
+	}
+
+	if ty.AssetNotFound != nil {
+		return "AssetNotFound"
+	}
+
+	if ty.BalanceNotEnough != nil {
+		return "BalanceNotEnough"
+	}
+
+	if ty.PayFailed != nil {
+		return "PayFailed"
+	}
+	return "Unknown"
+}
+
+type AssetInfo struct { // Enum
+	Native *[]byte   // 0
+	ERC20  *struct { // 1
+		F0 []byte
+		F1 types.H256
+	}
+}
+
+func (ty AssetInfo) Encode(encoder scale.Encoder) (err error) {
+	if ty.Native != nil {
+		err = encoder.PushByte(0)
+		if err != nil {
+			return err
+		}
+		err = encoder.Encode(*ty.Native)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if ty.ERC20 != nil {
+		err = encoder.PushByte(1)
+		if err != nil {
+			return err
+		}
+
+		err = encoder.Encode(ty.ERC20.F0)
+		if err != nil {
+			return err
+		}
+
+		err = encoder.Encode(ty.ERC20.F1)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+	return fmt.Errorf("unrecognized enum")
+}
+
+func (ty *AssetInfo) Decode(decoder scale.Decoder) (err error) {
+	variant, err := decoder.ReadOneByte()
+	if err != nil {
+		return err
+	}
+	switch variant {
+	case 0: // Inline
+		ty.Native = new([]byte)
+		err = decoder.Decode(ty.Native)
+		if err != nil {
+			return err
+		}
+		return
+	case 1: // Tuple
+		ty.ERC20 = &struct {
+			F0 []byte
+			F1 types.H256
+		}{}
+
+		err = decoder.Decode(&ty.ERC20.F0)
+		if err != nil {
+			return err
+		}
+
+		err = decoder.Decode(&ty.ERC20.F1)
+		if err != nil {
+			return err
+		}
+
+		return
+	default:
+		return fmt.Errorf("unrecognized enum")
+	}
+}
+
 type PodType struct { // Enum
 	CPU    *bool // 0
 	GPU    *bool // 1
@@ -109,6 +503,106 @@ func (ty *TEEType) Decode(decoder scale.Decoder) (err error) {
 	case 1: // Base
 		t := true
 		ty.CVM = &t
+		return
+	default:
+		return fmt.Errorf("unrecognized enum")
+	}
+}
+
+type Pod struct { // Composite
+	Name       []byte
+	Owner      types.H160
+	PodAddress types.H160
+	Ptype      PodType
+	StartBlock uint32
+	TeeType    TEEType
+	Level      byte
+	PayAssetId uint32
+}
+type Command struct { // Enum
+	SH   *[]byte // 0
+	BASH *[]byte // 1
+	ZSH  *[]byte // 2
+	NONE *bool   // 3
+}
+
+func (ty Command) Encode(encoder scale.Encoder) (err error) {
+	if ty.SH != nil {
+		err = encoder.PushByte(0)
+		if err != nil {
+			return err
+		}
+		err = encoder.Encode(*ty.SH)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if ty.BASH != nil {
+		err = encoder.PushByte(1)
+		if err != nil {
+			return err
+		}
+		err = encoder.Encode(*ty.BASH)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if ty.ZSH != nil {
+		err = encoder.PushByte(2)
+		if err != nil {
+			return err
+		}
+		err = encoder.Encode(*ty.ZSH)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if ty.NONE != nil {
+		err = encoder.PushByte(3)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	return fmt.Errorf("unrecognized enum")
+}
+
+func (ty *Command) Decode(decoder scale.Decoder) (err error) {
+	variant, err := decoder.ReadOneByte()
+	if err != nil {
+		return err
+	}
+	switch variant {
+	case 0: // Inline
+		ty.SH = new([]byte)
+		err = decoder.Decode(ty.SH)
+		if err != nil {
+			return err
+		}
+		return
+	case 1: // Inline
+		ty.BASH = new([]byte)
+		err = decoder.Decode(ty.BASH)
+		if err != nil {
+			return err
+		}
+		return
+	case 2: // Inline
+		ty.ZSH = new([]byte)
+		err = decoder.Decode(ty.ZSH)
+		if err != nil {
+			return err
+		}
+		return
+	case 3: // Base
+		t := true
+		ty.NONE = &t
 		return
 	default:
 		return fmt.Errorf("unrecognized enum")
@@ -403,100 +897,30 @@ type Container struct { // Composite
 	Gpu     uint32
 	Env     []Env
 }
-type Command struct { // Enum
-	SH   *[]byte // 0
-	BASH *[]byte // 1
-	ZSH  *[]byte // 2
-	NONE *bool   // 3
+type Tuple_34 struct { // Tuple
+	F0 uint64
+	F1 Container
 }
-
-func (ty Command) Encode(encoder scale.Encoder) (err error) {
-	if ty.SH != nil {
-		err = encoder.PushByte(0)
-		if err != nil {
-			return err
-		}
-		err = encoder.Encode(*ty.SH)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	if ty.BASH != nil {
-		err = encoder.PushByte(1)
-		if err != nil {
-			return err
-		}
-		err = encoder.Encode(*ty.BASH)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	if ty.ZSH != nil {
-		err = encoder.PushByte(2)
-		if err != nil {
-			return err
-		}
-		err = encoder.Encode(*ty.ZSH)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	if ty.NONE != nil {
-		err = encoder.PushByte(3)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-	return fmt.Errorf("unrecognized enum")
+type Tuple_36 struct { // Tuple
+	F0 uint64
+	F1 Pod
+	F2 []Tuple_34
+	F3 byte
 }
-
-func (ty *Command) Decode(decoder scale.Decoder) (err error) {
-	variant, err := decoder.ReadOneByte()
-	if err != nil {
-		return err
-	}
-	switch variant {
-	case 0: // Inline
-		ty.SH = new([]byte)
-		err = decoder.Decode(ty.SH)
-		if err != nil {
-			return err
-		}
-		return
-	case 1: // Inline
-		ty.BASH = new([]byte)
-		err = decoder.Decode(ty.BASH)
-		if err != nil {
-			return err
-		}
-		return
-	case 2: // Inline
-		ty.ZSH = new([]byte)
-		err = decoder.Decode(ty.ZSH)
-		if err != nil {
-			return err
-		}
-		return
-	case 3: // Base
-		t := true
-		ty.NONE = &t
-		return
-	default:
-		return fmt.Errorf("unrecognized enum")
-	}
+type Tuple_39 struct { // Tuple
+	F0 uint64
+	F1 uint32
+	F2 uint32
+	F3 byte
 }
-
 type Secret struct { // Composite
 	K      []byte
 	Hash   types.H256
 	Minted bool
+}
+type Tuple_44 struct { // Tuple
+	F0 uint64
+	F1 Secret
 }
 type Disk struct { // Enum
 	SecretSSD *struct { // 0
@@ -567,215 +991,54 @@ func (ty *Disk) Decode(decoder scale.Decoder) (err error) {
 	}
 }
 
-type Error struct { // Enum
-	SetCodeFailed          *bool // 0
-	MustCallByGovContract  *bool // 1
-	WorkerLevelNotEnough   *bool // 2
-	RegionNotMatch         *bool // 3
-	WorkerNotOnline        *bool // 4
-	NotPodOwner            *bool // 5
-	PodKeyNotExist         *bool // 6
-	PodStatusError         *bool // 7
-	InvalidSideChainCaller *bool // 8
-	DelFailed              *bool // 9
-	NotFound               *bool // 10
+type Tuple_55 struct { // Tuple
+	F0 uint64
+	F1 Disk
 }
-
-func (ty Error) Encode(encoder scale.Encoder) (err error) {
-	if ty.SetCodeFailed != nil {
-		err = encoder.PushByte(0)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	if ty.MustCallByGovContract != nil {
-		err = encoder.PushByte(1)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	if ty.WorkerLevelNotEnough != nil {
-		err = encoder.PushByte(2)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	if ty.RegionNotMatch != nil {
-		err = encoder.PushByte(3)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	if ty.WorkerNotOnline != nil {
-		err = encoder.PushByte(4)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	if ty.NotPodOwner != nil {
-		err = encoder.PushByte(5)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	if ty.PodKeyNotExist != nil {
-		err = encoder.PushByte(6)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	if ty.PodStatusError != nil {
-		err = encoder.PushByte(7)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	if ty.InvalidSideChainCaller != nil {
-		err = encoder.PushByte(8)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	if ty.DelFailed != nil {
-		err = encoder.PushByte(9)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	if ty.NotFound != nil {
-		err = encoder.PushByte(10)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-	return fmt.Errorf("unrecognized enum")
+type Ip struct { // Composite
+	Ipv4   util.Option[uint32]
+	Ipv6   util.Option[types.U128]
+	Domain util.Option[[]byte]
 }
-
-func (ty *Error) Decode(decoder scale.Decoder) (err error) {
-	variant, err := decoder.ReadOneByte()
-	if err != nil {
-		return err
-	}
-	switch variant {
-	case 0: // Base
-		t := true
-		ty.SetCodeFailed = &t
-		return
-	case 1: // Base
-		t := true
-		ty.MustCallByGovContract = &t
-		return
-	case 2: // Base
-		t := true
-		ty.WorkerLevelNotEnough = &t
-		return
-	case 3: // Base
-		t := true
-		ty.RegionNotMatch = &t
-		return
-	case 4: // Base
-		t := true
-		ty.WorkerNotOnline = &t
-		return
-	case 5: // Base
-		t := true
-		ty.NotPodOwner = &t
-		return
-	case 6: // Base
-		t := true
-		ty.PodKeyNotExist = &t
-		return
-	case 7: // Base
-		t := true
-		ty.PodStatusError = &t
-		return
-	case 8: // Base
-		t := true
-		ty.InvalidSideChainCaller = &t
-		return
-	case 9: // Base
-		t := true
-		ty.DelFailed = &t
-		return
-	case 10: // Base
-		t := true
-		ty.NotFound = &t
-		return
-	default:
-		return fmt.Errorf("unrecognized enum")
-	}
+type K8sCluster struct { // Composite
+	Name          []byte
+	Owner         types.H160
+	Level         byte
+	RegionId      uint32
+	StartBlock    uint32
+	StopBlock     util.Option[uint32]
+	TerminalBlock util.Option[uint32]
+	P2pId         util.AccountId
+	Ip            Ip
+	Port          uint32
+	Status        byte
 }
-func (ty *Error) Error() string {
-	if ty.SetCodeFailed != nil {
-		return "SetCodeFailed"
-	}
-
-	if ty.MustCallByGovContract != nil {
-		return "MustCallByGovContract"
-	}
-
-	if ty.WorkerLevelNotEnough != nil {
-		return "WorkerLevelNotEnough"
-	}
-
-	if ty.RegionNotMatch != nil {
-		return "RegionNotMatch"
-	}
-
-	if ty.WorkerNotOnline != nil {
-		return "WorkerNotOnline"
-	}
-
-	if ty.NotPodOwner != nil {
-		return "NotPodOwner"
-	}
-
-	if ty.PodKeyNotExist != nil {
-		return "PodKeyNotExist"
-	}
-
-	if ty.PodStatusError != nil {
-		return "PodStatusError"
-	}
-
-	if ty.InvalidSideChainCaller != nil {
-		return "InvalidSideChainCaller"
-	}
-
-	if ty.DelFailed != nil {
-		return "DelFailed"
-	}
-
-	if ty.NotFound != nil {
-		return "NotFound"
-	}
-	return "Unknown"
+type Tuple_66 struct { // Tuple
+	F0 uint64
+	F1 K8sCluster
+	F2 []byte
 }
-
-type ContainerInput struct { // Composite
-	Etype     EditType
-	Container Container
+type Tuple_71 struct { // Tuple
+	F0 Container
+	F1 []util.Option[Disk]
+}
+type Tuple_72 struct { // Tuple
+	F0 uint64
+	F1 Tuple_71
+}
+type Tuple_74 struct { // Tuple
+	F0 uint64
+	F1 Pod
+	F2 []Tuple_72
+	F3 uint32
+	F4 uint32
+	F5 byte
+}
+type Tuple_77 struct { // Tuple
+	F0 Pod
+	F1 []Tuple_34
+	F2 uint32
+	F3 byte
 }
 type EditType struct { // Enum
 	INSERT *bool   // 0
@@ -847,72 +1110,7 @@ func (ty *EditType) Decode(decoder scale.Decoder) (err error) {
 	}
 }
 
-type Tuple_115 struct { // Tuple
-	F0 uint64
-	F1 Pod
-	F2 []Tuple_117
-	F3 byte
-}
-type Tuple_117 struct { // Tuple
-	F0 uint64
-	F1 Container
-}
-type Tuple_121 struct { // Tuple
-	F0 uint64
-	F1 uint32
-	F2 uint32
-	F3 byte
-}
-type Tuple_124 struct { // Tuple
-	F0 Pod
-	F1 []Tuple_117
-	F2 uint32
-	F3 byte
-}
-type Tuple_127 struct { // Tuple
-	F0 uint64
-	F1 K8sCluster
-	F2 []byte
-}
-type K8sCluster struct { // Composite
-	Name          []byte
-	Owner         types.H160
-	Level         byte
-	RegionId      uint32
-	StartBlock    uint32
-	StopBlock     util.Option[uint32]
-	TerminalBlock util.Option[uint32]
-	P2pId         util.AccountId
-	Ip            Ip
-	Port          uint32
-	Status        byte
-}
-type Ip struct { // Composite
-	Ipv4   util.Option[uint32]
-	Ipv6   util.Option[types.U128]
-	Domain util.Option[[]byte]
-}
-type Tuple_135 struct { // Tuple
-	F0 uint64
-	F1 Pod
-	F2 []Tuple_137
-	F3 uint32
-	F4 uint32
-	F5 byte
-}
-type Tuple_137 struct { // Tuple
-	F0 uint64
-	F1 Tuple_138
-}
-type Tuple_138 struct { // Tuple
-	F0 Container
-	F1 []util.Option[Disk]
-}
-type Tuple_143 struct { // Tuple
-	F0 uint64
-	F1 Secret
-}
-type Tuple_151 struct { // Tuple
-	F0 uint64
-	F1 Disk
+type ContainerInput struct { // Composite
+	Etype     EditType
+	Container Container
 }

@@ -23,6 +23,8 @@ func NewContract(url []string, pk *ink.Signer, params map[string]string) (*Contr
 		return nil, err
 	}
 
+	client.Debug = true
+
 	cloud, err := cloud.InitCloudContract(client, params["cloud_addr"])
 	if err != nil {
 		util.LogWithPurple("InitCloudContract", err)

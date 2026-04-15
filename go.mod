@@ -7,7 +7,7 @@ toolchain go1.23.10
 require (
 	github.com/centrifuge/go-substrate-rpc-client/v4 v4.2.2-0.20240919131012-e3b938563803
 	github.com/cosmos/gogoproto v1.7.0
-	github.com/edgelesssys/ego v1.7.2
+	github.com/edgelesssys/ego v1.8.1
 	github.com/fatih/color v1.16.0
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/gogo/protobuf v1.3.2
@@ -15,7 +15,7 @@ require (
 	github.com/ihciah/rust2go v0.0.0-20250726175549-557d7a3a4e27
 	github.com/spf13/afero v1.11.0
 	github.com/vedhavyas/go-subkey/v2 v2.0.0
-	github.com/wetee-dao/ink.go v0.1.33
+	github.com/wetee-dao/ink.go v0.1.36
 	go.dedis.ch/kyber/v4 v4.0.0-pre2.0.20250414164612-66d4dee8d2e6
 	golang.org/x/sys v0.33.0
 )
@@ -69,12 +69,10 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
-	github.com/stretchr/testify v1.10.0 // indirect
+	github.com/stretchr/testify v1.11.1
 	golang.org/x/crypto v0.38.0
 	golang.org/x/text v0.25.0 // indirect
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/wetee-dao/ink.go => ../ink.go

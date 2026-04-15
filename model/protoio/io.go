@@ -56,23 +56,6 @@ type ReadCloser interface {
 	io.Closer
 }
 
-type marshaler interface {
-	MarshalTo(data []byte) (n int, err error)
-}
-
-func getSize(v any) (int, bool) {
-	if sz, ok := v.(interface {
-		Size() (n int)
-	}); ok {
-		return sz.Size(), true
-	} else if sz, ok := v.(interface {
-		ProtoSize() (n int)
-	}); ok {
-		return sz.ProtoSize(), true
-	}
-	return 0, false
-}
-
 // byteReader wraps an io.Reader and implements io.ByteReader, required by
 // binary.ReadUvarint(). Reading one byte at a time is extremely slow, but this
 // is what Amino did previously anyway, and the caller can wrap the underlying

@@ -1,4 +1,4 @@
-FROM wetee/ego-ubuntu-24-04:1.7.2
+FROM wetee/ego-ubuntu-24-04:1.8.1
 WORKDIR /
 
 # Add the hello 
