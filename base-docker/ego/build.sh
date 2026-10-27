@@ -8,8 +8,5 @@ done
 DIR="$( cd -P "$( dirname "$SOURCE"  )" && pwd  )"
 cd $DIR
 
-EGO_DEB=ego_1.8.1_amd64_ubuntu-24.04.deb
-wget https://github.com/edgelesssys/ego/releases/download/v1.8.1/$EGO_DEB
-
-docker build -f ./Dockerfile.ego-ubuntu-24-04-deploy -t wetee/ego-ubuntu-24-04:1.8.1 .
-docker push wetee/ego-ubuntu-24-04:1.8.1
+docker build -f ./Dockerfile.ego-ubuntu-24-04-deploy -t wetee/ego-ubuntu-24-04:1.10.1 .
+docker push wetee/ego-ubuntu-24-04:1.10.1
